@@ -1,0 +1,29 @@
+{
+  "name": "browser-passworder",
+  "version": "1.0.0",
+  "description": "A simple browserifiable module for password-encrypting JS objects.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "testem ci -P 2",
+    "buildTest": "browserify test/index.js -o test/bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:flyswatter/browser-passworder.git"
+  },
+  "keywords": [
+    "Browser",
+    "password",
+    "encryption",
+    "browserify"
+  ],
+  "author": "Dan Finlay",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/flyswatter/browser-encryptor/issues"
+  },
+  "homepage": "https://github.com/flyswatter/browser-encryptor#readme"
+}
