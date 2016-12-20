@@ -2,8 +2,9 @@
 
 A simple module for encrypting & decrypting Javascript objects with a password in the browser.
 
-Serializes the encrypted payload into a string of text
+Serializes the encrypted payload as a string of text for easy storage.
 
+Uses browser native crypto to be the lightest possible module you can have, with the most vetted internals you could ask for (the real guts here are implemented by the browser provider).
 
 ## Installation
 
@@ -37,6 +38,8 @@ The most advanced alternate usage would be if you want to cache the password-der
 ## Details
 
 The serialized text is stored as a JSON blob that includes two base64-encoded fields, `data` and `iv`, neither of which you need to worry about.
+
+The data is encrypted using the `AES-GCM` algorithm. It is salted with the result of `crypto.getRandomValues()`, and the encryption vector is generated the same way.
 
 ## Running Tests
 
