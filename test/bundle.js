@@ -1921,6 +1921,8 @@ module.exports = Array.isArray || function (arr) {
 
 },{}],5:[function(require,module,exports){
 (function (global){
+require('unibabel')
+
 module.exports = {
 
   // Simple encryption methods:
@@ -1932,26 +1934,18 @@ module.exports = {
   encryptWithKey,
   decryptWithKey,
 
-  // Buffer <-> String methods
-  convertArrayBufferViewtoString,
-  convertStringToArrayBufferView,
-
   // Buffer <-> Hex string methods
   serializeBufferForStorage,
   serializeBufferFromStorage,
-
-  // Buffer <-> base64 string methods
-  encodeBufferToBase64,
-  decodeBase64ToBuffer,
 
   generateSalt,
 }
 
 // Takes a Pojo, returns cypher text.
 function encrypt (password, dataObj) {
-  const salt = this.generateSalt()
+  var salt = generateSalt()
 
-  return keyFromPassword(password + salt)
+  return keyFromPassword(password, salt)
   .then(function (passwordDerivedKey) {
     return encryptWithKey(passwordDerivedKey, dataObj)
   })
@@ -1963,15 +1957,15 @@ function encrypt (password, dataObj) {
 
 function encryptWithKey (key, dataObj) {
   var data = JSON.stringify(dataObj)
-  var dataBuffer = convertStringToArrayBufferView(data)
+  var dataBuffer = Unibabel.utf8ToBuffer(data)
   var vector = global.crypto.getRandomValues(new Uint8Array(16))
   return global.crypto.subtle.encrypt({
     name: 'AES-GCM',
     iv: vector,
   }, key, dataBuffer).then(function (buf) {
     var buffer = new Uint8Array(buf)
-    var vectorStr = encodeBufferToBase64(vector)
-    var vaultStr = encodeBufferToBase64(buffer)
+    var vectorStr = Unibabel.bufferToBase64(vector)
+    var vaultStr = Unibabel.bufferToBase64(buffer)
     return {
       data: vaultStr,
       iv: vectorStr,
@@ -1983,19 +1977,19 @@ function encryptWithKey (key, dataObj) {
 function decrypt (password, text) {
   const payload = JSON.parse(text)
   const salt = payload.salt
-  return keyFromPassword(password + salt)
+  return keyFromPassword(password, salt)
   .then(function (key) {
     return decryptWithKey(key, payload)
   })
 }
 
 function decryptWithKey (key, payload) {
-  const encryptedData = decodeBase64ToBuffer(payload.data)
-  const vector = decodeBase64ToBuffer(payload.iv)
+  const encryptedData = Unibabel.base64ToBuffer(payload.data)
+  const vector = Unibabel.base64ToBuffer(payload.iv)
   return crypto.subtle.decrypt({name: 'AES-GCM', iv: vector}, key, encryptedData)
   .then(function (result) {
     const decryptedData = new Uint8Array(result)
-    const decryptedStr = convertArrayBufferViewtoString(decryptedData)
+    const decryptedStr = Unibabel.bufferToUtf8(decryptedData)
     const decryptedObj = JSON.parse(decryptedStr)
     return decryptedObj
   })
@@ -2004,27 +1998,34 @@ function decryptWithKey (key, payload) {
   })
 }
 
-function convertStringToArrayBufferView (str) {
-  var bytes = new Uint8Array(str.length)
-  for (var i = 0; i < str.length; i++) {
-    bytes[i] = str.charCodeAt(i)
-  }
+function keyFromPassword (password, salt) {
+  var passBuffer = Unibabel.utf8ToBuffer(password)
+  var saltBuffer = Unibabel.base64ToBuffer(salt)
 
-  return bytes
-}
+  return global.crypto.subtle.importKey(
+    'raw',
+    passBuffer,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  ).then(function (key) {
 
-function convertArrayBufferViewtoString (buffer) {
-  var str = ''
-  for (var i = 0; i < buffer.byteLength; i++) {
-    str += String.fromCharCode(buffer[i])
-  }
+    return global.crypto.subtle.deriveKey(
+      { name: 'PBKDF2',
+        salt: saltBuffer,
+        iterations: 10000,
+        hash: 'SHA-256',
+      },
+      key,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    )
+  })
 
-  return str
-}
-
-function keyFromPassword (password) {
-  var passBuffer = convertStringToArrayBufferView(password)
+  return global.crypto.subtle.deriveKey('')
   return global.crypto.subtle.digest('SHA-256', passBuffer)
+
   .then(function (passHash) {
     return global.crypto.subtle.importKey('raw', passHash, {name: 'AES-GCM'}, false, ['encrypt', 'decrypt'])
   })
@@ -2058,19 +2059,6 @@ function unprefixedHex (num) {
   return hex
 }
 
-function encodeBufferToBase64 (buf) {
-  var b64encoded = btoa(String.fromCharCode.apply(null, buf))
-  return b64encoded
-}
-
-function decodeBase64ToBuffer (base64) {
-  var buf = new Uint8Array(atob(base64).split('')
-  .map(function (c) {
-    return c.charCodeAt(0)
-  }))
-  return buf
-}
-
 function generateSalt (byteCount = 32) {
   var view = new Uint8Array(byteCount)
   global.crypto.getRandomValues(view)
@@ -2079,7 +2067,113 @@ function generateSalt (byteCount = 32) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],6:[function(require,module,exports){
+},{"unibabel":6}],6:[function(require,module,exports){
+(function () {
+'use strict';
+
+function utf8ToBinaryString(str) {
+  var escstr = encodeURIComponent(str);
+  // replaces any uri escape sequence, such as %0A,
+  // with binary escape, such as 0x0A
+  var binstr = escstr.replace(/%([0-9A-F]{2})/g, function(match, p1) {
+    return String.fromCharCode(parseInt(p1, 16));
+  });
+
+  return binstr;
+}
+
+function utf8ToBuffer(str) {
+  var binstr = utf8ToBinaryString(str);
+  var buf = binaryStringToBuffer(binstr);
+  return buf;
+}
+
+function utf8ToBase64(str) {
+  var binstr = utf8ToBinaryString(str);
+  return btoa(binstr);
+}
+
+function binaryStringToUtf8(binstr) {
+  var escstr = binstr.replace(/(.)/g, function (m, p) {
+    var code = p.charCodeAt(0).toString(16).toUpperCase();
+    if (code.length < 2) {
+      code = '0' + code;
+    }
+    return '%' + code;
+  });
+
+  return decodeURIComponent(escstr);
+}
+
+function bufferToUtf8(buf) {
+  var binstr = bufferToBinaryString(buf);
+
+  return binaryStringToUtf8(binstr);
+}
+
+function base64ToUtf8(b64) {
+  var binstr = atob(b64);
+
+  return binaryStringToUtf8(binstr);
+}
+
+function bufferToBinaryString(buf) {
+  var binstr = Array.prototype.map.call(buf, function (ch) {
+    return String.fromCharCode(ch);
+  }).join('');
+
+  return binstr;
+}
+
+function bufferToBase64(arr) {
+  var binstr = bufferToBinaryString(arr);
+  return btoa(binstr);
+}
+
+function binaryStringToBuffer(binstr) {
+  var buf;
+
+  if ('undefined' !== typeof Uint8Array) {
+    buf = new Uint8Array(binstr.length);
+  } else {
+    buf = [];
+  }
+
+  Array.prototype.forEach.call(binstr, function (ch, i) {
+    buf[i] = ch.charCodeAt(0);
+  });
+
+  return buf;
+}
+
+function base64ToBuffer(base64) {
+  var binstr = atob(base64);
+  var buf = binaryStringToBuffer(binstr);
+  return buf;
+}
+
+window.Unibabel = {
+  utf8ToBinaryString: utf8ToBinaryString
+, utf8ToBuffer: utf8ToBuffer
+, utf8ToBase64: utf8ToBase64
+, binaryStringToUtf8: binaryStringToUtf8
+, bufferToUtf8: bufferToUtf8
+, base64ToUtf8: base64ToUtf8
+, bufferToBinaryString: bufferToBinaryString
+, bufferToBase64: bufferToBase64
+, binaryStringToBuffer: binaryStringToBuffer
+, base64ToBuffer: base64ToBuffer
+
+// compat
+, strToUtf8Arr: utf8ToBuffer
+, utf8ArrToStr: bufferToUtf8
+, arrToBase64: bufferToBase64
+, base64ToArr: base64ToBuffer
+};
+
+}());
+
+},{}],7:[function(require,module,exports){
 (function (Buffer){
 var encryptor = require('../')
 
@@ -2123,6 +2217,7 @@ QUnit.test('encryptor:encrypt & decrypt', function(assert) {
     done()
   })
   .catch(function(reason) {
+    console.error(reason)
     assert.ifError(reason, 'threw an error')
     done(reason)
   })
@@ -2154,4 +2249,4 @@ QUnit.test('encryptor:encrypt & decrypt with wrong password', function(assert) {
 
 
 }).call(this,require("buffer").Buffer)
-},{"../":5,"buffer":2}]},{},[6]);
+},{"../":5,"buffer":2}]},{},[7]);

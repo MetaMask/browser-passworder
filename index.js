@@ -1,3 +1,5 @@
+require('unibabel')
+
 module.exports = {
 
   // Simple encryption methods:
@@ -9,26 +11,18 @@ module.exports = {
   encryptWithKey,
   decryptWithKey,
 
-  // Buffer <-> String methods
-  convertArrayBufferViewtoString,
-  convertStringToArrayBufferView,
-
   // Buffer <-> Hex string methods
   serializeBufferForStorage,
   serializeBufferFromStorage,
-
-  // Buffer <-> base64 string methods
-  encodeBufferToBase64,
-  decodeBase64ToBuffer,
 
   generateSalt,
 }
 
 // Takes a Pojo, returns cypher text.
 function encrypt (password, dataObj) {
-  const salt = this.generateSalt()
+  var salt = generateSalt()
 
-  return keyFromPassword(password + salt)
+  return keyFromPassword(password, salt)
   .then(function (passwordDerivedKey) {
     return encryptWithKey(passwordDerivedKey, dataObj)
   })
@@ -40,15 +34,15 @@ function encrypt (password, dataObj) {
 
 function encryptWithKey (key, dataObj) {
   var data = JSON.stringify(dataObj)
-  var dataBuffer = convertStringToArrayBufferView(data)
+  var dataBuffer = Unibabel.utf8ToBuffer(data)
   var vector = global.crypto.getRandomValues(new Uint8Array(16))
   return global.crypto.subtle.encrypt({
     name: 'AES-GCM',
     iv: vector,
   }, key, dataBuffer).then(function (buf) {
     var buffer = new Uint8Array(buf)
-    var vectorStr = encodeBufferToBase64(vector)
-    var vaultStr = encodeBufferToBase64(buffer)
+    var vectorStr = Unibabel.bufferToBase64(vector)
+    var vaultStr = Unibabel.bufferToBase64(buffer)
     return {
       data: vaultStr,
       iv: vectorStr,
@@ -60,19 +54,19 @@ function encryptWithKey (key, dataObj) {
 function decrypt (password, text) {
   const payload = JSON.parse(text)
   const salt = payload.salt
-  return keyFromPassword(password + salt)
+  return keyFromPassword(password, salt)
   .then(function (key) {
     return decryptWithKey(key, payload)
   })
 }
 
 function decryptWithKey (key, payload) {
-  const encryptedData = decodeBase64ToBuffer(payload.data)
-  const vector = decodeBase64ToBuffer(payload.iv)
+  const encryptedData = Unibabel.base64ToBuffer(payload.data)
+  const vector = Unibabel.base64ToBuffer(payload.iv)
   return crypto.subtle.decrypt({name: 'AES-GCM', iv: vector}, key, encryptedData)
   .then(function (result) {
     const decryptedData = new Uint8Array(result)
-    const decryptedStr = convertArrayBufferViewtoString(decryptedData)
+    const decryptedStr = Unibabel.bufferToUtf8(decryptedData)
     const decryptedObj = JSON.parse(decryptedStr)
     return decryptedObj
   })
@@ -81,27 +75,34 @@ function decryptWithKey (key, payload) {
   })
 }
 
-function convertStringToArrayBufferView (str) {
-  var bytes = new Uint8Array(str.length)
-  for (var i = 0; i < str.length; i++) {
-    bytes[i] = str.charCodeAt(i)
-  }
+function keyFromPassword (password, salt) {
+  var passBuffer = Unibabel.utf8ToBuffer(password)
+  var saltBuffer = Unibabel.base64ToBuffer(salt)
 
-  return bytes
-}
+  return global.crypto.subtle.importKey(
+    'raw',
+    passBuffer,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  ).then(function (key) {
 
-function convertArrayBufferViewtoString (buffer) {
-  var str = ''
-  for (var i = 0; i < buffer.byteLength; i++) {
-    str += String.fromCharCode(buffer[i])
-  }
+    return global.crypto.subtle.deriveKey(
+      { name: 'PBKDF2',
+        salt: saltBuffer,
+        iterations: 10000,
+        hash: 'SHA-256',
+      },
+      key,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    )
+  })
 
-  return str
-}
-
-function keyFromPassword (password) {
-  var passBuffer = convertStringToArrayBufferView(password)
+  return global.crypto.subtle.deriveKey('')
   return global.crypto.subtle.digest('SHA-256', passBuffer)
+
   .then(function (passHash) {
     return global.crypto.subtle.importKey('raw', passHash, {name: 'AES-GCM'}, false, ['encrypt', 'decrypt'])
   })
@@ -133,19 +134,6 @@ function unprefixedHex (num) {
     hex = '0' + hex
   }
   return hex
-}
-
-function encodeBufferToBase64 (buf) {
-  var b64encoded = btoa(String.fromCharCode.apply(null, buf))
-  return b64encoded
-}
-
-function decodeBase64ToBuffer (base64) {
-  var buf = new Uint8Array(atob(base64).split('')
-  .map(function (c) {
-    return c.charCodeAt(0)
-  }))
-  return buf
 }
 
 function generateSalt (byteCount = 32) {
