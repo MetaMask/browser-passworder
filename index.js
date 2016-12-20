@@ -1,4 +1,4 @@
-require('unibabel')
+var Unibabel = require('browserify-unibabel')
 
 module.exports = {
 
