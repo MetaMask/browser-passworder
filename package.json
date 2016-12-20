@@ -1,6 +1,6 @@
 {
   "name": "browser-passworder",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A simple browserifiable module for password-encrypting JS objects.",
   "main": "index.js",
   "directories": {
@@ -27,6 +27,6 @@
   },
   "homepage": "https://github.com/flyswatter/browser-encryptor#readme",
   "dependencies": {
-    "browserify-unibabel": "^2.1.3"
+    "browserify-unibabel": "^3.0.0"
   }
 }
