@@ -99,13 +99,6 @@ function keyFromPassword (password, salt) {
       ['encrypt', 'decrypt']
     )
   })
-
-  return global.crypto.subtle.deriveKey('')
-  return global.crypto.subtle.digest('SHA-256', passBuffer)
-
-  .then(function (passHash) {
-    return global.crypto.subtle.importKey('raw', passHash, {name: 'AES-GCM'}, false, ['encrypt', 'decrypt'])
-  })
 }
 
 function serializeBufferFromStorage (str) {
