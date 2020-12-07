@@ -1,4 +1,4 @@
-var encryptor = require('../')
+var encryptor = require('../dist/index.js')
 
 QUnit.module('encryptor')
 

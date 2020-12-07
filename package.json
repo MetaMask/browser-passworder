@@ -2,14 +2,19 @@
   "name": "browser-passworder",
   "version": "2.0.3",
   "description": "A simple browserifiable module for password-encrypting JS objects.",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "build": "tsc",
     "test": "testem ci -P 2",
-    "buildTest": "browserify test/index.js -o test/bundle.js"
+    "buildTest": "yarn build && browserify test/index.js -o test/bundle.js"
   },
+  "files": [
+    "dist/"
+  ],
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com:flyswatter/browser-passworder.git"
@@ -28,5 +33,11 @@
   "homepage": "https://github.com/flyswatter/browser-encryptor#readme",
   "dependencies": {
     "browserify-unibabel": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.5",
+    "browserify": "^17.0.0",
+    "testem": "^3.2.0",
+    "typescript": "^4.0.5"
   }
 }
