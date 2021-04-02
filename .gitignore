@@ -1,2 +1,6 @@
 node_modules/
 dist/
+#ignoring test/bundle.js
+test/*
+!test/index.html
+!test/index.js

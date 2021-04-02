@@ -11,7 +11,7 @@ Uses browser native crypto to be the lightest possible module you can have, with
 You need to have node.js installed.
 
 ```bash
-npm install browser-passworder
+yarn install browser-passworder
 ```
 
 ## Usage
@@ -43,6 +43,14 @@ The data is encrypted using the `AES-GCM` algorithm. It is salted with the resul
 
 ## Running Tests
 
+If modules are not installed, first be sure to run:
+
 ```bash
-npm test
+yarn
+```
+
+Then to activate the test suite:
+
+```bash
+yarn test
 ```

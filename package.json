@@ -7,6 +7,9 @@
   "directories": {
     "test": "test"
   },
+  "engines": {
+    "node": ">=12.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "test": "testem ci -P 2",
