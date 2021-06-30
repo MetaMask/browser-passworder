@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com:flyswatter/browser-passworder.git"
+    "url": "git+ssh://git@github.com:MetaMask/browser-passworder.git"
   },
   "keywords": [
     "Browser",
@@ -31,9 +31,9 @@
   "author": "Dan Finlay",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/flyswatter/browser-encryptor/issues"
+    "url": "https://github.com/MetaMask/browser-encryptor/issues"
   },
-  "homepage": "https://github.com/flyswatter/browser-encryptor#readme",
+  "homepage": "https://github.com/MetaMask/browser-encryptor#readme",
   "dependencies": {
     "browserify-unibabel": "^3.0.0"
   },

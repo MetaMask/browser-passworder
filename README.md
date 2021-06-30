@@ -1,4 +1,4 @@
-# Browser Passworder [![CircleCI](https://circleci.com/gh/flyswatter/browser-passworder.svg?style=svg)](https://circleci.com/gh/flyswatter/browser-passworder)
+# Browser Passworder [![CircleCI](https://circleci.com/gh/MetaMask/browser-passworder.svg?style=svg)](https://circleci.com/gh/MetaMask/browser-passworder)
 
 A simple module for encrypting & decrypting Javascript objects with a password in the browser.
 
