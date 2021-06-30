@@ -11,7 +11,7 @@ Uses browser native crypto to be the lightest possible module you can have, with
 You need to have node.js installed.
 
 ```bash
-yarn install browser-passworder
+yarn install @metamask/browser-passworder
 ```
 
 ## Usage
