@@ -17,18 +17,20 @@ yarn install @metamask/browser-passworder
 ## Usage
 
 ```javascript
-var passworder = require('browser-passworder')
+const { strict: assert } = require('assert');
+const passworder = require('browser-passworder');
 
-var secrets = { coolStuff: 'all', ssn: 'livin large' }
-var password = 'hunter55'
+const secrets = { coolStuff: 'all', ssn: 'livin large' };
+const password = 'hunter55';
 
-passworder.encrypt(password, secrets)
-.then(function(blob) {
-  return passworder.decrypt(password, blob)
-})
-.then(function(result) {
-  assert.deepEqual(result, secrets)
-})
+passworder
+  .encrypt(password, secrets)
+  .then(function (blob) {
+    return passworder.decrypt(password, blob);
+  })
+  .then(function (result) {
+    assert.deepEqual(result, secrets);
+  });
 ```
 
 There are also some more advanced internal methods you can choose to use, but that's the basic version of it.

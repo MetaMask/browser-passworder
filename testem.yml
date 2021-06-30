@@ -6,5 +6,5 @@ launch_in_ci:
   - Headless Firefox
 framework:
   - qunit
-before_tests: "npm run buildTest"
-test_page: "test/index.html"
+before_tests: 'npm run buildTest'
+test_page: 'test/index.html'

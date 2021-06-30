@@ -2,46 +2,62 @@
   "name": "@metamask/browser-passworder",
   "version": "2.0.3",
   "description": "A simple browserifiable module for password-encrypting JS objects.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "directories": {
-    "test": "test"
-  },
-  "engines": {
-    "node": ">=12.0.0"
-  },
-  "scripts": {
-    "build": "tsc",
-    "test": "testem ci -P 2",
-    "buildTest": "yarn build && browserify test/index.js -o test/bundle.js"
-  },
-  "files": [
-    "dist/"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com:MetaMask/browser-passworder.git"
-  },
   "keywords": [
     "Browser",
     "password",
     "encryption",
     "browserify"
   ],
-  "author": "Dan Finlay",
-  "license": "ISC",
+  "homepage": "https://github.com/MetaMask/browser-encryptor#readme",
   "bugs": {
     "url": "https://github.com/MetaMask/browser-encryptor/issues"
   },
-  "homepage": "https://github.com/MetaMask/browser-encryptor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:MetaMask/browser-passworder.git"
+  },
+  "license": "ISC",
+  "author": "Dan Finlay",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "directories": {
+    "test": "test"
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "testem ci -P 2",
+    "buildTest": "yarn build && browserify test/index.js -o test/bundle.js",
+    "lint:eslint": "eslint . --cache --ext js,ts",
+    "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
+    "lint": "yarn lint:eslint && yarn lint:misc --check",
+    "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write"
+  },
   "dependencies": {
     "browserify-unibabel": "^3.0.0"
   },
   "devDependencies": {
+    "@metamask/eslint-config": "^7.0.1",
+    "@metamask/eslint-config-nodejs": "^7.0.1",
+    "@metamask/eslint-config-typescript": "^7.0.1",
     "@types/node": "^14.14.5",
+    "@typescript-eslint/eslint-plugin": "^4.28.1",
+    "@typescript-eslint/parser": "^4.28.1",
     "browserify": "^17.0.0",
+    "eslint": "^7.29.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "prettier": "^2.3.2",
+    "prettier-plugin-packagejson": "^2.2.11",
     "testem": "^3.4.2",
-    "typescript": "^4.0.5"
+    "typescript": "^4.3.4"
+  },
+  "engines": {
+    "node": ">=12.0.0"
   },
   "publishConfig": {
     "access": "public",
