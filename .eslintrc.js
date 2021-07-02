@@ -14,6 +14,9 @@ module.exports = {
     },
     {
       files: ['test/index.js'],
+      env: {
+        browser: true,
+      },
       globals: {
         QUnit: true,
       },
