@@ -23,50 +23,42 @@ QUnit.test('encryptor:serializeBufferFromStorage', function (assert) {
   assert.equal(output[1], 1);
 });
 
-QUnit.test('encryptor:encrypt & decrypt', function (assert) {
+QUnit.test('encryptor:encrypt & decrypt', async function (assert) {
   const done = assert.async();
 
   const password = 'a sample passw0rd';
   const data = { foo: 'data to encrypt' };
 
-  encryptor
-    .encrypt(password, data)
-    .then(function (encryptedStr) {
-      assert.equal(typeof encryptedStr, 'string', 'returns a string');
-      return encryptor.decrypt(password, encryptedStr);
-    })
-    .then(function (decryptedObj) {
-      assert.deepEqual(decryptedObj, data, 'decrypted what was encrypted');
-      done();
-    })
-    .catch(function (reason) {
-      console.error(reason);
-      assert.ifError(reason, 'threw an error');
-      done(reason);
-    });
+  try {
+    const encryptedStr = await encryptor.encrypt(password, data);
+    assert.equal(typeof encryptedStr, 'string', 'returns a string');
+
+    const decryptedObj = await encryptor.decrypt(password, encryptedStr);
+    assert.deepEqual(decryptedObj, data, 'decrypted what was encrypted');
+    done();
+  } catch (error) {
+    assert.false(error, 'should be unreachable');
+    done();
+  }
 });
 
 QUnit.test(
   'encryptor:encrypt & decrypt with wrong password',
-  function (assert) {
+  async function (assert) {
     const done = assert.async();
 
     const password = 'a sample passw0rd';
     const wrongPassword = 'a wrong password';
     const data = { foo: 'data to encrypt' };
 
-    encryptor
-      .encrypt(password, data)
-      .then(function (encryptedStr) {
-        assert.equal(typeof encryptedStr, 'string', 'returns a string');
-        return encryptor.decrypt(wrongPassword, encryptedStr);
-      })
-      .then(function (decryptedObj) {
-        assert.equal(!decryptedObj, true, 'Wrong password should not decrypt');
-        done();
-      })
-      .catch(function (_error) {
-        done();
-      });
+    try {
+      const encryptedStr = await encryptor.encrypt(password, data);
+      assert.equal(typeof encryptedStr, 'string', 'returns a string');
+      await encryptor.decrypt(wrongPassword, encryptedStr);
+      assert.false(true, 'should be unreachable');
+    } catch (error) {
+      assert.equal(error.message, 'Incorrect password');
+      done();
+    }
   },
 );
