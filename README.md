@@ -1,6 +1,6 @@
 # Browser Passworder
 
-A simple module for encrypting & decrypting Javascript objects with a password in the browser.
+A simple module for encrypting & decrypting JavaScript objects with a password in the browser.
 
 Serializes the encrypted payload as a string of text for easy storage.
 
@@ -8,7 +8,7 @@ Uses browser native crypto to be the lightest possible module you can have, with
 
 ## Installation
 
-You need to have node.js installed.
+You need to have Node.js installed.
 
 ```bash
 yarn install @metamask/browser-passworder
