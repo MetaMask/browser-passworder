@@ -27,6 +27,7 @@
     "dist/"
   ],
   "scripts": {
+    "setup": "yarn install && yarn allow-scripts",
     "build": "tsc",
     "test": "testem ci -P 2",
     "buildTest": "yarn build && browserify test/index.js -o test/bundle.js",
@@ -36,6 +37,7 @@
     "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write"
   },
   "devDependencies": {
+    "@lavamoat/allow-scripts": "^1.0.6",
     "@metamask/eslint-config": "^7.0.1",
     "@metamask/eslint-config-nodejs": "^7.0.1",
     "@metamask/eslint-config-typescript": "^7.0.1",
@@ -59,5 +61,10 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
+  },
+  "lavamoat": {
+    "allowScripts": {
+      "@lavamoat/preinstall-always-fail": false
+    }
   }
 }
