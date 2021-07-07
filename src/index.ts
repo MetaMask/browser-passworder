@@ -1,5 +1,3 @@
-import * as Unibabel from 'browserify-unibabel';
-
 interface EncryptionResult {
   data: string;
   iv: string;
@@ -40,7 +38,7 @@ function encryptWithKey<R>(
   dataObj: R,
 ): Promise<EncryptionResult> {
   const data = JSON.stringify(dataObj);
-  const dataBuffer = Unibabel.utf8ToBuffer(data);
+  const dataBuffer = Buffer.from(data, 'utf-8');
   const vector = global.crypto.getRandomValues(new Uint8Array(16));
   return global.crypto.subtle
     .encrypt(
@@ -53,8 +51,8 @@ function encryptWithKey<R>(
     )
     .then(function (buf) {
       const buffer = new Uint8Array(buf);
-      const vectorStr = Unibabel.bufferToBase64(vector);
-      const vaultStr = Unibabel.bufferToBase64(buffer);
+      const vectorStr = Buffer.from(vector).toString('base64');
+      const vaultStr = Buffer.from(buffer).toString('base64');
       return {
         data: vaultStr,
         iv: vectorStr,
@@ -86,13 +84,13 @@ function decryptWithKey<R>(
   key: CryptoKey,
   payload: EncryptionResult,
 ): Promise<R> {
-  const encryptedData = Unibabel.base64ToBuffer(payload.data);
-  const vector = Unibabel.base64ToBuffer(payload.iv);
+  const encryptedData = Buffer.from(payload.data, 'base64');
+  const vector = Buffer.from(payload.iv, 'base64');
   return crypto.subtle
     .decrypt({ name: 'AES-GCM', iv: vector }, key, encryptedData)
     .then(function (result) {
       const decryptedData = new Uint8Array(result);
-      const decryptedStr = Unibabel.bufferToUtf8(decryptedData);
+      const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
       const decryptedObj = JSON.parse(decryptedStr);
       return decryptedObj;
     })
@@ -107,8 +105,8 @@ function decryptWithKey<R>(
  * @param {string} salt - The salt string to use in key derivation
  */
 function keyFromPassword(password: string, salt: string): Promise<CryptoKey> {
-  const passBuffer = Unibabel.utf8ToBuffer(password);
-  const saltBuffer = Unibabel.base64ToBuffer(salt);
+  const passBuffer = Buffer.from(password, 'utf-8');
+  const saltBuffer = Buffer.from(salt, 'base64');
 
   return global.crypto.subtle
     .importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [

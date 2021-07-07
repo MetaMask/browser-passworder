@@ -28,6 +28,5 @@ module.exports = {
     '!.prettierrc.js',
     'dist/',
     'test/bundle.js',
-    'types',
   ],
 };

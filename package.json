@@ -35,9 +35,6 @@
     "lint": "yarn lint:eslint && yarn lint:misc --check",
     "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write"
   },
-  "dependencies": {
-    "browserify-unibabel": "^3.0.0"
-  },
   "devDependencies": {
     "@metamask/eslint-config": "^7.0.1",
     "@metamask/eslint-config-nodejs": "^7.0.1",
