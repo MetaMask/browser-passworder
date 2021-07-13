@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "moduleResolution": "Node",
     "declaration": true,
+    "esModuleInterop": true,
+    "inlineSources": true,
+    "lib": ["DOM", "ES2020"],
     "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "rootDir": "src",
     "sourceMap": true,
     "strict": true,
-    "target": "es5",
-    "typeRoots": ["./types", "./node_modules/@types"],
-    "outDir": "dist"
+    "target": "ES2017"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "types"]
+  "include": ["src/**/*.ts"]
 }
