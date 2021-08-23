@@ -39,7 +39,7 @@ The most advanced alternate usage would be if you want to cache the password-der
 
 ## Details
 
-The serialized text is stored as a JSON blob that includes two base64-encoded fields, `data` and `iv`, neither of which you need to worry about.
+The serialized text is stored as a JSON blob that includes three base64-encoded fields, `data`, `iv`, and `salt`, none of which you need to worry about.
 
 The data is encrypted using the `AES-GCM` algorithm. It is salted with the result of `crypto.getRandomValues()`, and the encryption vector is generated the same way.
 
