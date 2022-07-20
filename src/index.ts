@@ -4,6 +4,11 @@ interface EncryptionResult {
   salt?: string;
 }
 
+interface DecryptionResult {
+  result: string;
+  key: string;
+}
+
 /**
  * Encrypts a data object that can be any serializable value using
  * a provided password.
@@ -66,13 +71,18 @@ function encryptWithKey<R>(
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
  */
-function decrypt<R>(password: string, text: string): Promise<R> {
+async function decrypt<R>(password: string, text: string): Promise<DecryptionResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
-  return keyFromPassword(password, salt).then(function (key) {
-    return decryptWithKey(key, payload);
-  });
+  const key = await keyFromPassword(password, salt);
+  const result = await decryptWithKey(key, payload);
+
+  return {
+    key,
+    result,
+  };
 }
+
 
 /**
  * Given a CryptoKey and an EncryptionResult object containing the initialization
