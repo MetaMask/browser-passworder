@@ -80,17 +80,17 @@ async function decryptWithKey<R>(
 ): Promise<R> {
   const encryptedData = Buffer.from(payload.data, 'base64');
   const vector = Buffer.from(payload.iv, 'base64');
-  const result = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: vector },
-    key,
-    encryptedData,
-  );
-
-  const decryptedData = new Uint8Array(result);
-  const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
 
   let decryptedObj;
   try {
+    const result = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: vector },
+      key,
+      encryptedData,
+    );
+
+    const decryptedData = new Uint8Array(result);
+    const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
     decryptedObj = JSON.parse(decryptedStr);
   } catch (e) {
     throw new Error('Incorrect password');
