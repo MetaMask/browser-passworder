@@ -12,17 +12,13 @@ interface EncryptionResult {
  * @param {R} dataObj - data to encrypt
  * @returns {Promise<string>} cypher text
  */
-function encrypt<R>(password: string, dataObj: R): Promise<string> {
+async function encrypt<R>(password: string, dataObj: R): Promise<string> {
   const salt = generateSalt();
 
-  return keyFromPassword(password, salt)
-    .then(function (passwordDerivedKey) {
-      return encryptWithKey(passwordDerivedKey, dataObj);
-    })
-    .then(function (payload) {
-      payload.salt = salt;
-      return JSON.stringify(payload);
-    });
+  const passwordDerivedKey = await keyFromPassword(password, salt);
+  const payload = await encryptWithKey(passwordDerivedKey, dataObj);
+  payload.salt = salt;
+  return JSON.stringify(payload);
 }
 
 /**
@@ -33,31 +29,30 @@ function encrypt<R>(password: string, dataObj: R): Promise<string> {
  * @param {R} dataObj - Serializable javascript object to encrypt
  * @returns {EncryptionResult}
  */
-function encryptWithKey<R>(
+async function encryptWithKey<R>(
   key: CryptoKey,
   dataObj: R,
 ): Promise<EncryptionResult> {
   const data = JSON.stringify(dataObj);
   const dataBuffer = Buffer.from(data, 'utf-8');
   const vector = global.crypto.getRandomValues(new Uint8Array(16));
-  return global.crypto.subtle
-    .encrypt(
-      {
-        name: 'AES-GCM',
-        iv: vector,
-      },
-      key,
-      dataBuffer,
-    )
-    .then(function (buf) {
-      const buffer = new Uint8Array(buf);
-      const vectorStr = Buffer.from(vector).toString('base64');
-      const vaultStr = Buffer.from(buffer).toString('base64');
-      return {
-        data: vaultStr,
-        iv: vectorStr,
-      };
-    });
+
+  const buf = await global.crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: vector,
+    },
+    key,
+    dataBuffer,
+  );
+
+  const buffer = new Uint8Array(buf);
+  const vectorStr = Buffer.from(vector).toString('base64');
+  const vaultStr = Buffer.from(buffer).toString('base64');
+  return {
+    data: vaultStr,
+    iv: vectorStr,
+  };
 }
 
 /**
@@ -66,12 +61,11 @@ function encryptWithKey<R>(
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
  */
-function decrypt<R>(password: string, text: string): Promise<R> {
+async function decrypt<R>(password: string, text: string): Promise<R> {
   const payload = JSON.parse(text);
   const { salt } = payload;
-  return keyFromPassword(password, salt).then(function (key) {
-    return decryptWithKey(key, payload);
-  });
+  const key = await keyFromPassword(password, salt);
+  return await decryptWithKey(key, payload);
 }
 
 /**
@@ -80,23 +74,29 @@ function decrypt<R>(password: string, text: string): Promise<R> {
  * @param {CryptoKey} key - CryptoKey to decrypt with
  * @param {EncryptionResult} payload - payload returned from an encryption method
  */
-function decryptWithKey<R>(
+async function decryptWithKey<R>(
   key: CryptoKey,
   payload: EncryptionResult,
 ): Promise<R> {
   const encryptedData = Buffer.from(payload.data, 'base64');
   const vector = Buffer.from(payload.iv, 'base64');
-  return crypto.subtle
-    .decrypt({ name: 'AES-GCM', iv: vector }, key, encryptedData)
-    .then(function (result) {
-      const decryptedData = new Uint8Array(result);
-      const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
-      const decryptedObj = JSON.parse(decryptedStr);
-      return decryptedObj;
-    })
-    .catch(function (_error) {
-      throw new Error('Incorrect password');
-    });
+
+  let decryptedObj;
+  try {
+    const result = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: vector },
+      key,
+      encryptedData,
+    );
+
+    const decryptedData = new Uint8Array(result);
+    const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
+    decryptedObj = JSON.parse(decryptedStr);
+  } catch (e) {
+    throw new Error('Incorrect password');
+  }
+
+  return decryptedObj;
 }
 
 /**
@@ -104,29 +104,35 @@ function decryptWithKey<R>(
  * @param {string} password - The password to use to generate key
  * @param {string} salt - The salt string to use in key derivation
  */
-function keyFromPassword(password: string, salt: string): Promise<CryptoKey> {
+async function keyFromPassword(
+  password: string,
+  salt: string,
+): Promise<CryptoKey> {
   const passBuffer = Buffer.from(password, 'utf-8');
   const saltBuffer = Buffer.from(salt, 'base64');
 
-  return global.crypto.subtle
-    .importKey('raw', passBuffer, { name: 'PBKDF2' }, false, [
-      'deriveBits',
-      'deriveKey',
-    ])
-    .then(function (key) {
-      return global.crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: saltBuffer,
-          iterations: 10000,
-          hash: 'SHA-256',
-        },
-        key,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['encrypt', 'decrypt'],
-      );
-    });
+  const key = await global.crypto.subtle.importKey(
+    'raw',
+    passBuffer,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey'],
+  );
+
+  const derivedKey = await global.crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: saltBuffer,
+      iterations: 10000,
+      hash: 'SHA-256',
+    },
+    key,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+
+  return derivedKey;
 }
 
 /**
