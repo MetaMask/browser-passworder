@@ -4,6 +4,9 @@ interface EncryptionResult {
   salt?: string;
 }
 
+const EXPORT_FORMAT = 'jwk';
+const DERIVED_KEY_FORMAT = 'AES-GCM';
+
 /**
  * Encrypts a data object that can be any serializable value using
  * a provided password.
@@ -18,7 +21,14 @@ async function encrypt<R>(password: string, dataObj: R): Promise<string> {
   const passwordDerivedKey = await keyFromPassword(password, salt);
   const payload = await encryptWithKey(passwordDerivedKey, dataObj);
   payload.salt = salt;
+  
   return JSON.stringify(payload);
+}
+
+async function exportKey(key: CryptoKey) {
+  return JSON.stringify(
+    await window.crypto.subtle.exportKey(EXPORT_FORMAT, key),
+  );
 }
 
 /**
@@ -39,7 +49,7 @@ async function encryptWithKey<R>(
 
   const buf = await global.crypto.subtle.encrypt(
     {
-      name: 'AES-GCM',
+      name: DERIVED_KEY_FORMAT,
       iv: vector,
     },
     key,
@@ -65,7 +75,32 @@ async function decrypt<R>(password: string, text: string): Promise<R> {
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
-  return await decryptWithKey(key, payload);
+
+  const extractedKeyString = await exportKey(key);
+  const vault = await decryptWithKey(key, payload);
+
+  return {
+    extractedKeyString,
+    vault,
+  }
+}
+
+async function decryptWithEncryptedKeyString(keyString: string) {
+  const key = await window.crypto.subtle.importKey(
+    EXPORT_FORMAT,
+    JSON.parse(keyString),
+    DERIVED_KEY_FORMAT,
+    true,
+    ['encrypt', 'decrypt'],
+  );
+  const data = {
+    // WHERE DO WE STORE THIS VALUE?
+    data: '',
+    iv: '',
+    salt: '',
+  };
+
+  return await decryptWithKey(key, data);
 }
 
 /**
@@ -84,7 +119,7 @@ async function decryptWithKey<R>(
   let decryptedObj;
   try {
     const result = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: vector },
+      { name: DERIVED_KEY_FORMAT, iv: vector },
       key,
       encryptedData,
     );
@@ -127,8 +162,8 @@ async function keyFromPassword(
       hash: 'SHA-256',
     },
     key,
-    { name: 'AES-GCM', length: 256 },
-    false,
+    { name: DERIVED_KEY_FORMAT, length: 256 },
+    true,
     ['encrypt', 'decrypt'],
   );
 
@@ -206,6 +241,7 @@ export = {
   keyFromPassword,
   encryptWithKey,
   decryptWithKey,
+  decryptWithEncryptedKeyString,
 
   // Buffer <-> Hex string methods
   serializeBufferForStorage,
