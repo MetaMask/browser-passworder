@@ -21,14 +21,8 @@ async function encrypt<R>(password: string, dataObj: R): Promise<string> {
   const passwordDerivedKey = await keyFromPassword(password, salt);
   const payload = await encryptWithKey(passwordDerivedKey, dataObj);
   payload.salt = salt;
-  
-  return JSON.stringify(payload);
-}
 
-async function exportKey(key: CryptoKey) {
-  return JSON.stringify(
-    await window.crypto.subtle.exportKey(EXPORT_FORMAT, key),
-  );
+  return JSON.stringify(payload);
 }
 
 /**
@@ -78,14 +72,16 @@ async function decrypt<R>(password: string, text: string): Promise<R> {
 
   const extractedKeyString = await exportKey(key);
   const vault = await decryptWithKey(key, payload);
+  const data = JSON.stringify(payload);
 
   return {
     extractedKeyString,
     vault,
-  }
+    data,
+  };
 }
 
-async function decryptWithEncryptedKeyString(keyString: string) {
+async function decryptWithEncryptedKeyString(keyString, data) {
   const key = await window.crypto.subtle.importKey(
     EXPORT_FORMAT,
     JSON.parse(keyString),
@@ -93,14 +89,13 @@ async function decryptWithEncryptedKeyString(keyString: string) {
     true,
     ['encrypt', 'decrypt'],
   );
-  const data = {
-    // WHERE DO WE STORE THIS VALUE?
-    data: '',
-    iv: '',
-    salt: '',
-  };
+  return await decryptWithKey(key, JSON.parse(data));
+}
 
-  return await decryptWithKey(key, data);
+async function exportKey(key) {
+  return JSON.stringify(
+    await window.crypto.subtle.exportKey(EXPORT_FORMAT, key),
+  );
 }
 
 /**
