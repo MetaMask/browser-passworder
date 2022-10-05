@@ -82,6 +82,12 @@ async function decrypt<R>(password: string, text: string): Promise<R> {
 }
 
 async function decryptWithEncryptedKeyString(keyString, data) {
+  const key = await createKeyFromString(keyString);
+
+  return await decryptWithKey(key, JSON.parse(data));
+}
+
+async function createKeyFromString(keyString) {
   const key = await window.crypto.subtle.importKey(
     EXPORT_FORMAT,
     JSON.parse(keyString),
@@ -89,7 +95,8 @@ async function decryptWithEncryptedKeyString(keyString, data) {
     true,
     ['encrypt', 'decrypt'],
   );
-  return await decryptWithKey(key, JSON.parse(data));
+
+  return key;
 }
 
 async function exportKey(key) {
@@ -236,6 +243,7 @@ export = {
   keyFromPassword,
   encryptWithKey,
   decryptWithKey,
+  createKeyFromString,
   decryptWithEncryptedKeyString,
 
   // Buffer <-> Hex string methods
