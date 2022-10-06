@@ -12,6 +12,7 @@ interface DecryptResult {
 
 const EXPORT_FORMAT = 'jwk';
 const DERIVED_KEY_FORMAT = 'AES-GCM';
+const STRING_ENCODING = 'utf-8';
 
 /**
  * Encrypts a data object that can be any serializable value using
@@ -44,7 +45,7 @@ async function encryptWithKey<R>(
   dataObj: R,
 ): Promise<EncryptionResult> {
   const data = JSON.stringify(dataObj);
-  const dataBuffer = Buffer.from(data, 'utf-8');
+  const dataBuffer = Buffer.from(data, STRING_ENCODING);
   const vector = global.crypto.getRandomValues(new Uint8Array(16));
 
   const buf = await global.crypto.subtle.encrypt(
@@ -135,7 +136,7 @@ async function decryptWithKey<R>(
     );
 
     const decryptedData = new Uint8Array(result);
-    const decryptedStr = Buffer.from(decryptedData).toString('utf-8');
+    const decryptedStr = Buffer.from(decryptedData).toString(STRING_ENCODING);
     decryptedObj = JSON.parse(decryptedStr);
   } catch (e) {
     throw new Error('Incorrect password');
@@ -153,7 +154,7 @@ async function keyFromPassword(
   password: string,
   salt: string,
 ): Promise<CryptoKey> {
-  const passBuffer = Buffer.from(password, 'utf-8');
+  const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
 
   const key = await global.crypto.subtle.importKey(
