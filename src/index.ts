@@ -4,6 +4,12 @@ interface EncryptionResult {
   salt?: string;
 }
 
+interface DecryptResult {
+  extractedKeyString: string;
+  vault: object;
+  data: string;
+}
+
 const EXPORT_FORMAT = 'jwk';
 const DERIVED_KEY_FORMAT = 'AES-GCM';
 
@@ -65,7 +71,10 @@ async function encryptWithKey<R>(
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
  */
-async function decrypt<R>(password: string, text: string): Promise<R> {
+async function decrypt<R>(
+  password: string,
+  text: string,
+): Promise<DecryptResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
@@ -81,13 +90,13 @@ async function decrypt<R>(password: string, text: string): Promise<R> {
   };
 }
 
-async function decryptWithEncryptedKeyString(keyString, data) {
+async function decryptWithEncryptedKeyString(keyString: string, data: string) {
   const key = await createKeyFromString(keyString);
 
   return await decryptWithKey(key, JSON.parse(data));
 }
 
-async function createKeyFromString(keyString) {
+async function createKeyFromString(keyString: string): Promise<CryptoKey> {
   const key = await window.crypto.subtle.importKey(
     EXPORT_FORMAT,
     JSON.parse(keyString),
@@ -99,10 +108,9 @@ async function createKeyFromString(keyString) {
   return key;
 }
 
-async function exportKey(key) {
-  return JSON.stringify(
-    await window.crypto.subtle.exportKey(EXPORT_FORMAT, key),
-  );
+async function exportKey(key: CryptoKey): Promise<string> {
+  const exportedKey = window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
+  return JSON.stringify(exportedKey);
 }
 
 /**
@@ -114,7 +122,7 @@ async function exportKey(key) {
 async function decryptWithKey<R>(
   key: CryptoKey,
   payload: EncryptionResult,
-): Promise<R> {
+): Promise<object> {
   const encryptedData = Buffer.from(payload.data, 'base64');
   const vector = Buffer.from(payload.iv, 'base64');
 
