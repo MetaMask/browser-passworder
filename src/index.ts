@@ -6,7 +6,7 @@ interface EncryptionResult {
 
 interface DecryptResult {
   extractedKeyString: string;
-  vault: object;
+  vault: unknown;
   data: string;
 }
 
@@ -71,11 +71,9 @@ async function encryptWithKey<R>(
  * the resulting value
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
+ * @returns {DecryptResult}
  */
-async function decrypt<R>(
-  password: string,
-  text: string,
-): Promise<DecryptResult> {
+async function decrypt(password: string, text: string): Promise<DecryptResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
@@ -123,7 +121,7 @@ async function exportKey(key: CryptoKey): Promise<string> {
 async function decryptWithKey<R>(
   key: CryptoKey,
   payload: EncryptionResult,
-): Promise<object> {
+): Promise<R> {
   const encryptedData = Buffer.from(payload.data, 'base64');
   const vector = Buffer.from(payload.iv, 'base64');
 
