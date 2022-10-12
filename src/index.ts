@@ -1,3 +1,8 @@
+interface EncryptReturn {
+  vault: string;
+  extractedKeyString: string;
+}
+
 interface EncryptionResult {
   data: string;
   iv: string;
@@ -22,14 +27,22 @@ const STRING_ENCODING = 'utf-8';
  * @param {R} dataObj - data to encrypt
  * @returns {Promise<string>} cypher text
  */
-async function encrypt<R>(password: string, dataObj: R): Promise<string> {
+async function encrypt<R>(
+  password: string,
+  dataObj: R,
+): Promise<EncryptReturn> {
   const salt = generateSalt();
 
   const passwordDerivedKey = await keyFromPassword(password, salt);
   const payload = await encryptWithKey(passwordDerivedKey, dataObj);
   payload.salt = salt;
 
-  return JSON.stringify(payload);
+  const extractedKeyString = await exportKey(passwordDerivedKey);
+
+  return {
+    vault: JSON.stringify(payload),
+    extractedKeyString,
+  };
 }
 
 /**
