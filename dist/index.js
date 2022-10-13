@@ -58,11 +58,10 @@ async function decrypt(password, text) {
     const key = await keyFromPassword(password, salt);
     const extractedKeyString = await exportKey(key);
     const vault = await decryptWithKey(key, payload);
-    const data = JSON.stringify(payload);
     return {
         extractedKeyString,
         vault,
-        data,
+        salt,
     };
 }
 async function decryptWithEncryptedKeyString(keyString, data) {

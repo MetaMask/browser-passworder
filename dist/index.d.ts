@@ -10,7 +10,7 @@ interface EncryptionResult {
 interface DecryptResult {
     extractedKeyString: string;
     vault: unknown;
-    data: string;
+    salt: string;
 }
 /**
  * Encrypts a data object that can be any serializable value using

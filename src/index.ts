@@ -12,7 +12,7 @@ interface EncryptionResult {
 interface DecryptResult {
   extractedKeyString: string;
   vault: unknown;
-  data: string;
+  salt: string;
 }
 
 const EXPORT_FORMAT = 'jwk';
@@ -93,12 +93,11 @@ async function decrypt(password: string, text: string): Promise<DecryptResult> {
 
   const extractedKeyString = await exportKey(key);
   const vault = await decryptWithKey(key, payload);
-  const data = JSON.stringify(payload);
 
   return {
     extractedKeyString,
     vault,
-    data,
+    salt,
   };
 }
 
