@@ -121,7 +121,7 @@ async function createKeyFromString(keyString: string): Promise<CryptoKey> {
 }
 
 async function exportKey(key: CryptoKey): Promise<string> {
-  const exportedKey = window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
+  const exportedKey = await window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
   return JSON.stringify(exportedKey);
 }
 
