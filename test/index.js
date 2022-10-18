@@ -1,348 +1,237 @@
 const encryptor = require('../dist');
 
-QUnit.module('encryptor');
+describe('encryptor', function () {
 
-QUnit.test('encryptor:serializeBufferForStorage', function (assert) {
-  assert.expect(1);
-  const buf = Buffer.alloc(2);
-  buf[0] = 16;
-  buf[1] = 1;
+  /**
+     * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
+     * encrypted using v2.0.3 of this library with the password
+     * `a sample passw0rd`. This should be left unmodified, as it's used to test
+     * that decrypting older encrypted data continues to work.
+     */
+   const MOCK_ENCRYPTED_DATA = {
+    data: 'bfCvija6QfwqARmHsKT7ZR0GHi8yjz7iVEZodRVx3xI2yzFHwq7+B/U=',
+    iv: 'N9s46G5sp37A7wtf3vo/LA==',
+    salt: '+uzzUKmbAdwkjw8rILhJvZE9dOfz2ecF5Gtf7yNkyyE=',
+  };
 
-  const output = encryptor.serializeBufferForStorage(buf);
+  describe('serializeBuffer', function () {
+    it('encryptor:serializeBufferForStorage', function () {
+      const buf = Buffer.alloc(2);
+      buf[0] = 16;
+      buf[1] = 1;
 
-  const expect = '0x1001';
-  assert.equal(expect, output);
-});
+      const output = encryptor.serializeBufferForStorage(buf);
 
-QUnit.test('encryptor:serializeBufferFromStorage', function (assert) {
-  assert.expect(2);
-  const input = '0x1001';
-  const output = encryptor.serializeBufferFromStorage(input);
+      const expected = '0x1001';
+      expect(output).toBe(expected);
+    });
 
-  assert.equal(output[0], 16);
-  assert.equal(output[1], 1);
-});
+    it('encryptor:serializeBufferFromStorage', function () {
+      const input = '0x1001';
+      const output = encryptor.serializeBufferFromStorage(input);
 
-QUnit.test(
-  'encryptor:generateSalt generates 32 byte Base64-encoded string by default',
-  function (assert) {
-    assert.expect(2);
+      expect(output[0]).toBe(16);
+      expect(output[1]).toBe(1);
+    });
+  });
 
-    const salt = encryptor.generateSalt();
-    assert.equal(salt.length, 44, 'should generate salt 44 characters long');
-    const decodedSalt = atob(salt);
-    assert.equal(
-      decodedSalt.length,
-      32,
-      'should decode salt 32 characters long',
-    );
-  },
-);
+  describe('generateSalt', function () {
+    it('generates 32 byte Base64-encoded string by default', function () {
+      const salt = encryptor.generateSalt();
+      expect(salt.length).toBe(44);
+      const decodedSalt = atob(salt);
+      expect(decodedSalt.length).toBe(32);
+    });
 
-QUnit.test(
-  'encryptor:generateSalt generates 32 byte Base64-encoded string',
-  function (assert) {
-    assert.expect(2);
+    it('generates 32 byte Base64-encoded string', function () {
+      const salt = encryptor.generateSalt(32);
+      expect(salt.length).toBe(44);
+      const decodedSalt = atob(salt);
+      expect(decodedSalt.length).toBe(32);
+    });
 
-    const salt = encryptor.generateSalt(32);
-    assert.equal(salt.length, 44, 'should generate salt 44 characters long');
-    const decodedSalt = atob(salt);
-    assert.equal(
-      decodedSalt.length,
-      32,
-      'should decode salt 32 characters long',
-    );
-  },
-);
+    it('generates 16 byte Base64-encoded string', function () {
+      const salt = encryptor.generateSalt(16);
+      expect(salt.length).toBe(24);
+      const decodedSalt = atob(salt);
+      expect(decodedSalt.length).toBe(16);
+    });
 
-QUnit.test(
-  'encryptor:generateSalt generates 16 byte Base64-encoded string',
-  function (assert) {
-    assert.expect(2);
+    it('generates 64 byte Base64-encoded string', function () {
+      const salt = encryptor.generateSalt(64);
+      expect(salt.length).toBe(88);
+      const decodedSalt = atob(salt);
+      expect(decodedSalt.length).toBe(64);
+    });
+  });
 
-    const salt = encryptor.generateSalt(16);
-    assert.equal(salt.length, 24, 'should generate salt 24 characters long');
-    const decodedSalt = atob(salt);
-    assert.equal(
-      decodedSalt.length,
-      16,
-      'should decode salt 16 characters long',
-    );
-  },
-);
+  describe('encrypt', function () {
+    it('encryptor:encrypt & decrypt', async function () {
+      const password = 'a sample passw0rd';
+      const data = { foo: 'data to encrypt' };
 
-QUnit.test(
-  'encryptor:generateSalt generates 64 byte Base64-encoded string',
-  function (assert) {
-    assert.expect(2);
-
-    const salt = encryptor.generateSalt(64);
-    assert.equal(salt.length, 88, 'should generate salt 88 characters long');
-    const decodedSalt = atob(salt);
-    assert.equal(
-      decodedSalt.length,
-      64,
-      'should decode salt 64 characters long',
-    );
-  },
-);
-
-QUnit.test('encryptor:encrypt & decrypt', async function (assert) {
-  const done = assert.async();
-
-  const password = 'a sample passw0rd';
-  const data = { foo: 'data to encrypt' };
-
-  try {
-    const encryptedStr = await encryptor.encrypt(password, data);
-    assert.equal(typeof encryptedStr, 'string', 'returns a string');
-
-    const decryptedObj = await encryptor.decrypt(password, encryptedStr);
-    assert.deepEqual(decryptedObj, data, 'decrypted what was encrypted');
-    done();
-  } catch (error) {
-    assert.false(error, 'should be unreachable');
-    done();
-  }
-});
-
-QUnit.test(
-  'encryptor:encrypt & decrypt with wrong password',
-  async function (assert) {
-    const done = assert.async();
-
-    const password = 'a sample passw0rd';
-    const wrongPassword = 'a wrong password';
-    const data = { foo: 'data to encrypt' };
-
-    try {
       const encryptedStr = await encryptor.encrypt(password, data);
-      assert.equal(typeof encryptedStr, 'string', 'returns a string');
-      await encryptor.decrypt(wrongPassword, encryptedStr);
-      assert.false(true, 'should be unreachable');
-    } catch (error) {
-      assert.equal(error.message, 'Incorrect password');
-      done();
-    }
-  },
-);
+      expect(typeof encryptedStr).toBe('string');
 
-/**
- * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
- * encrypted using v2.0.3 of this library with the password
- * `a sample passw0rd`. This should be left unmodified, as it's used to test
- * that decrypting older encrypted data continues to work.
- */
-const encryptedData = {
-  data: 'bfCvija6QfwqARmHsKT7ZR0GHi8yjz7iVEZodRVx3xI2yzFHwq7+B/U=',
-  iv: 'N9s46G5sp37A7wtf3vo/LA==',
-  salt: '+uzzUKmbAdwkjw8rILhJvZE9dOfz2ecF5Gtf7yNkyyE=',
-};
+      const decryptedObj = await encryptor.decrypt(password, encryptedStr);
+      expect(decryptedObj).toMatchObject(data);
+    });
 
-QUnit.test('encryptor:decrypt encrypted data', async function (assert) {
-  const done = assert.async();
+    it('encryptor:encrypt & decrypt with wrong password', async function () {
+      const password = 'a sample passw0rd';
+      const wrongPassword = 'a wrong password';
+      const data = { foo: 'data to encrypt' };
 
-  const password = 'a sample passw0rd';
-  const expectedData = { foo: 'data to encrypt' };
+      try {
+        const encryptedStr = await encryptor.encrypt(password, data);
+        expect(typeof encryptedStr).toBe('string');
+        await encryptor.decrypt(wrongPassword, encryptedStr);
+      } catch (error) {
+        expect(error.message).toBe('Incorrect password');
+      }
+    });
+  });
 
-  try {
-    const decryptedObj = await encryptor.decrypt(
-      password,
-      JSON.stringify(encryptedData),
-    );
-    assert.deepEqual(
-      decryptedObj,
-      expectedData,
-      'Expected data should be decrypted',
-    );
-    done();
-  } catch (error) {
-    assert.notOk(error, 'should be unreachable');
-    done();
-  }
-});
+  describe('decrypt', function () {
+    it('encryptor:decrypt encrypted data', async function () {
+      const password = 'a sample passw0rd';
+      const expectedData = { foo: 'data to encrypt' };
 
-QUnit.test(
-  'encryptor:decrypt encrypted data using wrong password',
-  async function (assert) {
-    const done = assert.async();
+      const decryptedObj = await encryptor.decrypt(
+        password,
+        JSON.stringify(MOCK_ENCRYPTED_DATA),
+      );
+      expect(decryptedObj).toMatchObject(expectedData);
+    });
 
-    const wrongPassword = 'a wrong password';
+    it('encryptor:decrypt encrypted data using wrong password', async function () {
+      const wrongPassword = 'a wrong password';
 
-    try {
-      await encryptor.decrypt(wrongPassword, JSON.stringify(encryptedData));
-      assert.notOk(true, 'should be unreachable');
-      done();
-    } catch (error) {
-      assert.equal(error.message, 'Incorrect password');
-      done();
-    }
-  },
-);
+      try {
+        await encryptor.decrypt(wrongPassword, JSON.stringify(MOCK_ENCRYPTED_DATA));
+      } catch (error) {
+        expect(error.message).toBe('Incorrect password');
+      }
+    });
+  });
 
-QUnit.test('encryptor:encrypt using key then decrypt', async function (assert) {
-  const done = assert.async();
+  describe('encryptWithKey', function () {
+    it('encryptor:encrypt using key then decrypt', async function () {
+      const password = 'a sample passw0rd';
+      const data = { foo: 'data to encrypt' };
+      const salt = encryptor.generateSalt();
 
-  const password = 'a sample passw0rd';
-  const data = { foo: 'data to encrypt' };
-  const salt = encryptor.generateSalt();
-
-  try {
-    const key = await encryptor.keyFromPassword(password, salt);
-    const encryptedObj = await encryptor.encryptWithKey(key, data);
-
-    assert.deepEqual(
-      Object.keys(encryptedObj).sort(),
-      ['data', 'iv'],
-      'returns expected shape',
-    );
-
-    const encryptedStr = JSON.stringify(
-      Object.assign({}, encryptedObj, { salt }),
-    );
-    const decryptedObj = await encryptor.decrypt(password, encryptedStr);
-
-    assert.deepEqual(decryptedObj, data, 'decrypted what was encrypted');
-    done();
-  } catch (error) {
-    assert.notOk(error, 'should be unreachable');
-    done();
-  }
-});
-
-QUnit.test(
-  'encryptor:encrypt using key then decrypt using wrong password',
-  async function (assert) {
-    const done = assert.async();
-
-    const password = 'a sample passw0rd';
-    const wrongPassword = 'a wrong password';
-    const data = { foo: 'data to encrypt' };
-    const salt = encryptor.generateSalt();
-
-    try {
       const key = await encryptor.keyFromPassword(password, salt);
       const encryptedObj = await encryptor.encryptWithKey(key, data);
 
-      assert.deepEqual(
-        Object.keys(encryptedObj).sort(),
-        ['data', 'iv'],
-        'returns expected shape',
-      );
+      expect(Object.keys(encryptedObj).sort()).toMatchObject(['data', 'iv']);
 
       const encryptedStr = JSON.stringify(
         Object.assign({}, encryptedObj, { salt }),
       );
-      await encryptor.decrypt(wrongPassword, encryptedStr);
-      assert.notOk(true, 'should be unreachable');
-      done();
-    } catch (error) {
-      assert.equal(error.message, 'Incorrect password');
-      done();
-    }
-  },
-);
+      const decryptedObj = await encryptor.decrypt(password, encryptedStr);
 
-QUnit.test('encryptor:encrypt then decrypt using key', async function (assert) {
-  const done = assert.async();
+      expect(decryptedObj).toMatchObject(data);
+    });
 
-  const password = 'a sample passw0rd';
-  const data = { foo: 'data to encrypt' };
+    it('encryptor:encrypt using key then decrypt using wrong password', async function () {
+      const password = 'a sample passw0rd';
+      const wrongPassword = 'a wrong password';
+      const data = { foo: 'data to encrypt' };
+      const salt = encryptor.generateSalt();
 
-  try {
-    const encryptedStr = await encryptor.encrypt(password, data);
+      try {
+        const key = await encryptor.keyFromPassword(password, salt);
+        const encryptedObj = await encryptor.encryptWithKey(key, data);
 
-    assert.equal(typeof encryptedStr, 'string', 'returns a string');
-    const encryptedObj = JSON.parse(encryptedStr);
-    const { salt } = encryptedObj;
-    const encryptedPayload = { data: encryptedObj.data, iv: encryptedObj.iv };
+        expect(Object.keys(encryptedObj).sort()).toMatchObject(['data', 'iv']);
 
-    const key = await encryptor.keyFromPassword(password, salt);
-    const decryptedObj = await encryptor.decryptWithKey(key, encryptedPayload);
+        const encryptedStr = JSON.stringify(
+          Object.assign({}, encryptedObj, { salt }),
+        );
+        await encryptor.decrypt(wrongPassword, encryptedStr);
+      } catch (error) {
+        expect(error.message).toBe('Incorrect password');
+      }
+    });
+  });
 
-    assert.deepEqual(decryptedObj, data, 'decrypted what was encrypted');
-    done();
-  } catch (error) {
-    assert.notOk(error, 'should be unreachable');
-    done();
-  }
-});
+  describe('decryptWithKey', function () {
+    it('encryptor:encrypt then decrypt using key', async function () {
+      const password = 'a sample passw0rd';
+      const data = { foo: 'data to encrypt' };
 
-QUnit.test(
-  'encryptor:encrypt then decrypt using key derived from wrong password',
-  async function (assert) {
-    const done = assert.async();
-
-    const password = 'a sample passw0rd';
-    const wrongPassword = 'a wrong password';
-    const data = { foo: 'data to encrypt' };
-
-    try {
       const encryptedStr = await encryptor.encrypt(password, data);
 
-      assert.equal(typeof encryptedStr, 'string', 'returns a string');
+      expect(typeof encryptedStr).toBe('string');
       const encryptedObj = JSON.parse(encryptedStr);
       const { salt } = encryptedObj;
       const encryptedPayload = { data: encryptedObj.data, iv: encryptedObj.iv };
 
-      const key = await encryptor.keyFromPassword(wrongPassword, salt);
-      await encryptor.decryptWithKey(key, encryptedPayload);
-      assert.notOk(true, 'should be unreachable');
-      done();
-    } catch (error) {
-      assert.equal(error.message, 'Incorrect password');
-      done();
-    }
-  },
-);
-
-QUnit.test(
-  'encryptor:decrypt encrypted data using key',
-  async function (assert) {
-    const done = assert.async();
-
-    const password = 'a sample passw0rd';
-    const expectedData = { foo: 'data to encrypt' };
-    const encryptedPayload = { data: encryptedData.data, iv: encryptedData.iv };
-
-    try {
-      const key = await encryptor.keyFromPassword(password, encryptedData.salt);
+      const key = await encryptor.keyFromPassword(password, salt);
       const decryptedObj = await encryptor.decryptWithKey(
         key,
         encryptedPayload,
       );
-      assert.deepEqual(
-        decryptedObj,
-        expectedData,
-        'Expected data should be decrypted',
+
+      expect(decryptedObj).toMatchObject(data);
+    });
+
+    it('encryptor:encrypt then decrypt using key derived from wrong password', async function () {
+      const password = 'a sample passw0rd';
+      const wrongPassword = 'a wrong password';
+      const data = { foo: 'data to encrypt' };
+
+      try {
+        const encryptedStr = await encryptor.encrypt(password, data);
+
+        expect(typeof encryptedStr).toBe('string');
+        const encryptedObj = JSON.parse(encryptedStr);
+        const { salt } = encryptedObj;
+        const encryptedPayload = {
+          data: encryptedObj.data,
+          iv: encryptedObj.iv,
+        };
+
+        const key = await encryptor.keyFromPassword(wrongPassword, salt);
+        await encryptor.decryptWithKey(key, encryptedPayload);
+      } catch (error) {
+        expect(error.message).toBe('Incorrect password');
+      }
+    });
+
+    it('encryptor:decrypt encrypted data using key', async function () {
+      const password = 'a sample passw0rd';
+      const expectedData = { foo: 'data to encrypt' };
+      const encryptedPayload = {
+        data: MOCK_ENCRYPTED_DATA.data,
+        iv: MOCK_ENCRYPTED_DATA.iv,
+      };
+
+      const key = await encryptor.keyFromPassword(password, MOCK_ENCRYPTED_DATA.salt);
+      const decryptedObj = await encryptor.decryptWithKey(
+        key,
+        encryptedPayload,
       );
-      done();
-    } catch (error) {
-      assert.notOk(error, 'should be unreachable');
-      done();
-    }
-  },
-);
+      expect(decryptedObj).toMatchObject(expectedData);
+    });
 
-QUnit.test(
-  'encryptor:decrypt encrypted data using key derived from wrong password',
-  async function (assert) {
-    const done = assert.async();
+    it('encryptor:decrypt encrypted data using key derived from wrong password', async function () {
+      const wrongPassword = 'a wrong password';
+      const encryptedPayload = {
+        data: MOCK_ENCRYPTED_DATA.data,
+        iv: MOCK_ENCRYPTED_DATA.iv,
+      };
 
-    const wrongPassword = 'a wrong password';
-    const encryptedPayload = { data: encryptedData.data, iv: encryptedData.iv };
-
-    try {
-      const key = await encryptor.keyFromPassword(
-        wrongPassword,
-        encryptedData.salt,
-      );
-      await encryptor.decryptWithKey(key, encryptedPayload);
-      assert.notOk(true, 'should be unreachable');
-      done();
-    } catch (error) {
-      assert.equal(error.message, 'Incorrect password');
-      done();
-    }
-  },
-);
+      try {
+        const key = await encryptor.keyFromPassword(
+          wrongPassword,
+          MOCK_ENCRYPTED_DATA.salt,
+        );
+        await encryptor.decryptWithKey(key, encryptedPayload);
+      } catch (error) {
+        expect(error.message).toBe('Incorrect password');
+      }
+    });
+  });
+});
