@@ -1,4 +1,4 @@
-interface EncryptReturn {
+interface DetailedEncryptionResult {
   vault: string;
   extractedKeyString: string;
 }
@@ -9,7 +9,7 @@ interface EncryptionResult {
   salt?: string;
 }
 
-interface DecryptResult {
+interface DetailedDecryptResult {
   extractedKeyString: string;
   vault: unknown;
   salt: string;
@@ -25,22 +25,43 @@ const STRING_ENCODING = 'utf-8';
  *
  * @param {string} password - password to use for encryption
  * @param {R} dataObj - data to encrypt
+ * @param {CryptoKey} key - a CryptoKey instance
+ * @param {string} salt - salt used to encrypt
  * @returns {Promise<string>} cypher text
  */
 async function encrypt<R>(
   password: string,
   dataObj: R,
-): Promise<EncryptReturn> {
-  const salt = generateSalt();
+  key: CryptoKey,
+  salt: string = generateSalt(),
+): Promise<string> {
+  const cryptoKey = key || (await keyFromPassword(password, salt));
 
-  const passwordDerivedKey = await keyFromPassword(password, salt);
-  const payload = await encryptWithKey(passwordDerivedKey, dataObj);
+  const payload = await encryptWithKey(cryptoKey, dataObj);
   payload.salt = salt;
 
-  const extractedKeyString = await exportKey(passwordDerivedKey);
+  return JSON.stringify(payload);
+}
+
+/**
+ * Encrypts a data object that can be any serializable value using
+ * a provided password.
+ *
+ * @param {string} password - password to use for encryption
+ * @param {R} dataObj - data to encrypt
+ * @returns {Promise<DetailedEncryptionResult>} object with vault and extractedKeyString
+ */
+async function encryptWithDetail<R>(
+  password: string,
+  dataObj: R,
+): Promise<DetailedEncryptionResult> {
+  const salt = generateSalt();
+  const key = await keyFromPassword(password, salt);
+  const extractedKeyString = await exportKey(key);
+  const vault = await encrypt(password, dataObj, key, salt);
 
   return {
-    vault: JSON.stringify(payload),
+    vault,
     extractedKeyString,
   };
 }
@@ -84,15 +105,39 @@ async function encryptWithKey<R>(
  * the resulting value
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
- * @returns {DecryptResult}
+ * @param {CryptoKey} key - a key to use for decrypting
+ * @returns {object}
  */
-async function decrypt(password: string, text: string): Promise<DecryptResult> {
+async function decrypt(
+  password: string,
+  text: string,
+  key: CryptoKey,
+): Promise<unknown> {
+  const payload = JSON.parse(text);
+  const { salt } = payload;
+
+  const cryptoKey = key || (await keyFromPassword(password, salt));
+
+  const result = await decryptWithKey(cryptoKey, payload);
+  return result;
+}
+
+/**
+ * Given a password and a cypher text, decrypts the text and returns
+ * the resulting value, keyString, and salt
+ * @param {string} password - password to decrypt with
+ * @param {string} text - cypher text to decrypt
+ * @returns {object}
+ */
+async function decryptWithDetail(
+  password: string,
+  text: string,
+): Promise<DetailedDecryptResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
-
   const extractedKeyString = await exportKey(key);
-  const vault = await decryptWithKey(key, payload);
+  const vault = await decrypt(password, text, key);
 
   return {
     extractedKeyString,
@@ -101,12 +146,24 @@ async function decrypt(password: string, text: string): Promise<DecryptResult> {
   };
 }
 
+/**
+ * Receives an exported CryptoKey string, creates a key,
+ * and decrypts cipher text with the reconstructed key
+ * @param {string} password - password to decrypt with
+ * @param {string} text - cypher text to decrypt
+ * @returns {object}
+ */
 async function decryptWithEncryptedKeyString(keyString: string, data: string) {
   const key = await createKeyFromString(keyString);
-
-  return await decryptWithKey(key, JSON.parse(data));
+  const payload = await decryptWithKey(key, JSON.parse(data));
+  return payload;
 }
 
+/**
+ * Receives an exported CryptoKey string and creates a key
+ * @param {string} keyString - keyString to import
+ * @returns {CryptoKey}
+ */
 async function createKeyFromString(keyString: string): Promise<CryptoKey> {
   const key = await window.crypto.subtle.importKey(
     EXPORT_FORMAT,
@@ -119,6 +176,12 @@ async function createKeyFromString(keyString: string): Promise<CryptoKey> {
   return key;
 }
 
+/**
+ * Receives an exported CryptoKey string, creates a key,
+ * and decrypts cipher text with the reconstructed key
+ * @param {CryptoKey} key - key to export
+ * @returns {string}
+ */
 async function exportKey(key: CryptoKey): Promise<string> {
   const exportedKey = await window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
   return JSON.stringify(exportedKey);
@@ -262,6 +325,9 @@ export = {
   keyFromPassword,
   encryptWithKey,
   decryptWithKey,
+
+  encryptWithDetail,
+  decryptWithDetail,
   createKeyFromString,
   decryptWithEncryptedKeyString,
 
