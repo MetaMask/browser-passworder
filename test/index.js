@@ -1,14 +1,17 @@
 const encryptor = require('../dist');
+const crypto = require('crypto').webcrypto;
+
+// Shims the crypto property onto global
+global.crypto = crypto;
 
 describe('encryptor', function () {
-
   /**
-     * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
-     * encrypted using v2.0.3 of this library with the password
-     * `a sample passw0rd`. This should be left unmodified, as it's used to test
-     * that decrypting older encrypted data continues to work.
-     */
-   const MOCK_ENCRYPTED_DATA = {
+   * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
+   * encrypted using v2.0.3 of this library with the password
+   * `a sample passw0rd`. This should be left unmodified, as it's used to test
+   * that decrypting older encrypted data continues to work.
+   */
+  const MOCK_ENCRYPTED_DATA = {
     data: 'bfCvija6QfwqARmHsKT7ZR0GHi8yjz7iVEZodRVx3xI2yzFHwq7+B/U=',
     iv: 'N9s46G5sp37A7wtf3vo/LA==',
     salt: '+uzzUKmbAdwkjw8rILhJvZE9dOfz2ecF5Gtf7yNkyyE=',
@@ -108,7 +111,10 @@ describe('encryptor', function () {
       const wrongPassword = 'a wrong password';
 
       try {
-        await encryptor.decrypt(wrongPassword, JSON.stringify(MOCK_ENCRYPTED_DATA));
+        await encryptor.decrypt(
+          wrongPassword,
+          JSON.stringify(MOCK_ENCRYPTED_DATA),
+        );
       } catch (error) {
         expect(error.message).toBe('Incorrect password');
       }
@@ -208,7 +214,10 @@ describe('encryptor', function () {
         iv: MOCK_ENCRYPTED_DATA.iv,
       };
 
-      const key = await encryptor.keyFromPassword(password, MOCK_ENCRYPTED_DATA.salt);
+      const key = await encryptor.keyFromPassword(
+        password,
+        MOCK_ENCRYPTED_DATA.salt,
+      );
       const decryptedObj = await encryptor.decryptWithKey(
         key,
         encryptedPayload,

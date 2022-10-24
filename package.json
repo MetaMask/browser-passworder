@@ -29,7 +29,7 @@
   "scripts": {
     "setup": "yarn install && yarn allow-scripts",
     "build": "tsc",
-    "test": "jest ./test/index.js",
+    "test": "yarn build && jest ./test/index.js",
     "buildTest": "yarn build && browserify test/index.js -o test/bundle.js",
     "lint:eslint": "eslint . --cache --ext js,ts",
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
@@ -58,7 +58,7 @@
     "typescript": "^4.3.4"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=16.0.0"
   },
   "publishConfig": {
     "access": "public",
