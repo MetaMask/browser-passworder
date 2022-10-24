@@ -5,3 +5,4 @@ test/*
 !test/index.html
 !test/index.js
 .eslintcache
+coverage
