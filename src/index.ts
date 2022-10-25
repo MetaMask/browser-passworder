@@ -111,7 +111,7 @@ async function encryptWithKey<R>(
 async function decrypt(
   password: string,
   text: string,
-  key: CryptoKey,
+  key?: CryptoKey,
 ): Promise<unknown> {
   const payload = JSON.parse(text);
   const { salt } = payload;
