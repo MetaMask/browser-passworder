@@ -32,7 +32,7 @@ const STRING_ENCODING = 'utf-8';
 async function encrypt<R>(
   password: string,
   dataObj: R,
-  key: CryptoKey,
+  key?: CryptoKey,
   salt: string = generateSalt(),
 ): Promise<string> {
   const cryptoKey = key || (await keyFromPassword(password, salt));
