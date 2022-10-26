@@ -12,7 +12,10 @@ interface EncryptionResult {
  * @param {R} dataObj - data to encrypt
  * @returns {Promise<string>} cypher text
  */
-async function encrypt<R>(password: string, dataObj: R): Promise<string> {
+export async function encrypt<R>(
+  password: string,
+  dataObj: R,
+): Promise<string> {
   const salt = generateSalt();
 
   const passwordDerivedKey = await keyFromPassword(password, salt);
@@ -29,7 +32,7 @@ async function encrypt<R>(password: string, dataObj: R): Promise<string> {
  * @param {R} dataObj - Serializable javascript object to encrypt
  * @returns {EncryptionResult}
  */
-async function encryptWithKey<R>(
+export async function encryptWithKey<R>(
   key: CryptoKey,
   dataObj: R,
 ): Promise<EncryptionResult> {
@@ -61,7 +64,7 @@ async function encryptWithKey<R>(
  * @param {string} password - password to decrypt with
  * @param {string} text - cypher text to decrypt
  */
-async function decrypt<R>(password: string, text: string): Promise<R> {
+export async function decrypt<R>(password: string, text: string): Promise<R> {
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
@@ -74,7 +77,7 @@ async function decrypt<R>(password: string, text: string): Promise<R> {
  * @param {CryptoKey} key - CryptoKey to decrypt with
  * @param {EncryptionResult} payload - payload returned from an encryption method
  */
-async function decryptWithKey<R>(
+export async function decryptWithKey<R>(
   key: CryptoKey,
   payload: EncryptionResult,
 ): Promise<R> {
@@ -104,7 +107,7 @@ async function decryptWithKey<R>(
  * @param {string} password - The password to use to generate key
  * @param {string} salt - The salt string to use in key derivation
  */
-async function keyFromPassword(
+export async function keyFromPassword(
   password: string,
   salt: string,
 ): Promise<CryptoKey> {
@@ -140,7 +143,7 @@ async function keyFromPassword(
  * @param {string} str - hex encoded string
  * @returns {Uint8Array}
  */
-function serializeBufferFromStorage(str: string): Uint8Array {
+export function serializeBufferFromStorage(str: string): Uint8Array {
   const stripStr = str.slice(0, 2) === '0x' ? str.slice(2) : str;
   const buf = new Uint8Array(stripStr.length / 2);
   for (let i = 0; i < stripStr.length; i += 2) {
@@ -155,7 +158,7 @@ function serializeBufferFromStorage(str: string): Uint8Array {
  * @param {Uint8Array} buffer - Buffer to serialize
  * @returns {string} hex encoded string
  */
-function serializeBufferForStorage(buffer: Uint8Array): string {
+export function serializeBufferForStorage(buffer: Uint8Array): string {
   let result = '0x';
   const len = buffer.length || buffer.byteLength;
   for (let i = 0; i < len; i++) {
@@ -183,7 +186,7 @@ function unprefixedHex(num: number): string {
  * @param {number} byteCount - Number of bytes to generate
  * @returns {string} randomly generated string
  */
-function generateSalt(byteCount = 32): string {
+export function generateSalt(byteCount = 32): string {
   const view = new Uint8Array(byteCount);
   global.crypto.getRandomValues(view);
   // Uint8Array is a fixed length array and thus does not have methods like pop, etc
@@ -196,20 +199,3 @@ function generateSalt(byteCount = 32): string {
   );
   return b64encoded;
 }
-
-export = {
-  // Simple encryption methods:
-  encrypt,
-  decrypt,
-
-  // More advanced encryption methods:
-  keyFromPassword,
-  encryptWithKey,
-  decryptWithKey,
-
-  // Buffer <-> Hex string methods
-  serializeBufferForStorage,
-  serializeBufferFromStorage,
-
-  generateSalt,
-};
