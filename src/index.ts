@@ -316,7 +316,6 @@ export = {
   encryptWithDetail,
   decryptWithDetail,
   createKeyFromString,
-  decryptWithEncryptedKeyString,
 
   // Buffer <-> Hex string methods
   serializeBufferForStorage,
