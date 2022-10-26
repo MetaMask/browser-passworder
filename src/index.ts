@@ -147,19 +147,6 @@ async function decryptWithDetail(
 }
 
 /**
- * Receives an exported CryptoKey string, creates a key,
- * and decrypts cipher text with the reconstructed key
- * @param {string} password - password to decrypt with
- * @param {string} text - cypher text to decrypt
- * @returns {object}
- */
-async function decryptWithEncryptedKeyString(keyString: string, data: string) {
-  const key = await createKeyFromString(keyString);
-  const payload = await decryptWithKey(key, JSON.parse(data));
-  return payload;
-}
-
-/**
  * Receives an exported CryptoKey string and creates a key
  * @param {string} keyString - keyString to import
  * @returns {CryptoKey}
