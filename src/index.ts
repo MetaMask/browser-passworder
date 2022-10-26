@@ -1,6 +1,6 @@
 interface DetailedEncryptionResult {
   vault: string;
-  extractedKeyString: string;
+  exportedKeyString: string;
 }
 
 interface EncryptionResult {
@@ -10,7 +10,7 @@ interface EncryptionResult {
 }
 
 interface DetailedDecryptResult {
-  extractedKeyString: string;
+  exportedKeyString: string;
   vault: unknown;
   salt: string;
 }
@@ -49,7 +49,7 @@ async function encrypt<R>(
  *
  * @param {string} password - password to use for encryption
  * @param {R} dataObj - data to encrypt
- * @returns {Promise<DetailedEncryptionResult>} object with vault and extractedKeyString
+ * @returns {Promise<DetailedEncryptionResult>} object with vault and exportedKeyString
  */
 async function encryptWithDetail<R>(
   password: string,
@@ -57,12 +57,12 @@ async function encryptWithDetail<R>(
 ): Promise<DetailedEncryptionResult> {
   const salt = generateSalt();
   const key = await keyFromPassword(password, salt);
-  const extractedKeyString = await exportKey(key);
+  const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
 
   return {
     vault,
-    extractedKeyString,
+    exportedKeyString,
   };
 }
 
@@ -136,11 +136,11 @@ async function decryptWithDetail(
   const payload = JSON.parse(text);
   const { salt } = payload;
   const key = await keyFromPassword(password, salt);
-  const extractedKeyString = await exportKey(key);
+  const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
   return {
-    extractedKeyString,
+    exportedKeyString,
     vault,
     salt,
   };
