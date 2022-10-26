@@ -1,19 +1,19 @@
-interface DetailedEncryptionResult {
+type DetailedEncryptionResult = {
   vault: string;
   exportedKeyString: string;
-}
+};
 
-interface EncryptionResult {
+type EncryptionResult = {
   data: string;
   iv: string;
   salt?: string;
-}
+};
 
-interface DetailedDecryptResult {
+type DetailedDecryptResult = {
   exportedKeyString: string;
   vault: unknown;
   salt: string;
-}
+};
 
 const EXPORT_FORMAT = 'jwk';
 const DERIVED_KEY_FORMAT = 'AES-GCM';
@@ -23,11 +23,11 @@ const STRING_ENCODING = 'utf-8';
  * Encrypts a data object that can be any serializable value using
  * a provided password.
  *
- * @param {string} password - password to use for encryption
- * @param {R} dataObj - data to encrypt
- * @param {CryptoKey} key - a CryptoKey instance
- * @param {string} salt - salt used to encrypt
- * @returns {Promise<string>} cypher text
+ * @param password - The password to use for encryption.
+ * @param dataObj - The data to encrypt.
+ * @param key - The CryptoKey to encrypt with.
+ * @param salt - The salt to use to encrypt.
+ * @returns The encrypted vault.
  */
 export async function encrypt<R>(
   password: string,
@@ -45,10 +45,10 @@ export async function encrypt<R>(
  * Encrypts a data object that can be any serializable value using
  * a provided password.
  *
- * @param {string} password - password to use for encryption
- * @param {R} dataObj - data to encrypt
- * @param {R} salt - salt used to encrypt
- * @returns {Promise<DetailedEncryptionResult>} object with vault and exportedKeyString
+ * @param password - A password to use for encryption.
+ * @param dataObj - The data to encrypt.
+ * @param salt - The salt used to encrypt.
+ * @returns The vault and exported key string.
  */
 export async function encryptWithDetail<R>(
   password: string,
@@ -69,9 +69,10 @@ export async function encryptWithDetail<R>(
  * Encrypts the provided serializable javascript object using the
  * provided CryptoKey and returns an object containing the cypher text and
  * the initialization vector used.
- * @param {CryptoKey} key - CryptoKey to encrypt with
- * @param {R} dataObj - Serializable javascript object to encrypt
- * @returns {EncryptionResult}
+ *
+ * @param key - The CryptoKey to encrypt with.
+ * @param dataObj - A serializable JavaScript object to encrypt.
+ * @returns The encrypted data.
  */
 export async function encryptWithKey<R>(
   key: CryptoKey,
@@ -101,11 +102,12 @@ export async function encryptWithKey<R>(
 
 /**
  * Given a password and a cypher text, decrypts the text and returns
- * the resulting value
- * @param {string} password - password to decrypt with
- * @param {string} text - cypher text to decrypt
- * @param {CryptoKey} key - a key to use for decrypting
- * @returns {object}
+ * the resulting value.
+ *
+ * @param password - The password to decrypt with.
+ * @param text - The cypher text to decrypt.
+ * @param key - The key to decrypt with.
+ * @returns The decrypted data.
  */
 export async function decrypt(
   password: string,
@@ -123,10 +125,11 @@ export async function decrypt(
 
 /**
  * Given a password and a cypher text, decrypts the text and returns
- * the resulting value, keyString, and salt
- * @param {string} password - password to decrypt with
- * @param {string} text - cypher text to decrypt
- * @returns {object}
+ * the resulting value, keyString, and salt.
+ *
+ * @param password - The password to decrypt with.
+ * @param text - The encrypted vault to decrypt.
+ * @returns The decrypted vault along with the salt and exported key.
  */
 export async function decryptWithDetail(
   password: string,
@@ -148,8 +151,10 @@ export async function decryptWithDetail(
 /**
  * Given a CryptoKey and an EncryptionResult object containing the initialization
  * vector (iv) and data to decrypt, return the resulting decrypted value.
- * @param {CryptoKey} key - CryptoKey to decrypt with
- * @param {EncryptionResult} payload - payload returned from an encryption method
+ *
+ * @param key - The CryptoKey to decrypt with.
+ * @param payload - The payload to decrypt, returned from an encryption method.
+ * @returns The decrypted data.
  */
 export async function decryptWithKey<R>(
   key: CryptoKey,
@@ -177,9 +182,10 @@ export async function decryptWithKey<R>(
 }
 
 /**
- * Receives an exported CryptoKey string and creates a key
- * @param {string} keyString - keyString to import
- * @returns {CryptoKey}
+ * Receives an exported CryptoKey string and creates a key.
+ *
+ * @param keyString - The key string to import.
+ * @returns A CryptoKey.
  */
 export async function importKey(keyString: string): Promise<CryptoKey> {
   const key = await window.crypto.subtle.importKey(
@@ -195,9 +201,10 @@ export async function importKey(keyString: string): Promise<CryptoKey> {
 
 /**
  * Receives an exported CryptoKey string, creates a key,
- * and decrypts cipher text with the reconstructed key
- * @param {CryptoKey} key - key to export
- * @returns {string}
+ * and decrypts cipher text with the reconstructed key.
+ *
+ * @param key - The CryptoKey to export.
+ * @returns A key string.
  */
 export async function exportKey(key: CryptoKey): Promise<string> {
   const exportedKey = await window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
@@ -205,9 +212,11 @@ export async function exportKey(key: CryptoKey): Promise<string> {
 }
 
 /**
- * Generate a CryptoKey from a password and random salt
- * @param {string} password - The password to use to generate key
- * @param {string} salt - The salt string to use in key derivation
+ * Generate a CryptoKey from a password and random salt.
+ *
+ * @param password - The password to use to generate key.
+ * @param salt - The salt string to use in key derivation.
+ * @returns A CryptoKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
@@ -242,8 +251,9 @@ export async function keyFromPassword(
 
 /**
  * Converts a hex string into a buffer.
- * @param {string} str - hex encoded string
- * @returns {Uint8Array}
+ *
+ * @param str - Hex encoded string.
+ * @returns The string ecoded as a byte array.
  */
 export function serializeBufferFromStorage(str: string): Uint8Array {
   const stripStr = str.slice(0, 2) === '0x' ? str.slice(2) : str;
@@ -256,9 +266,10 @@ export function serializeBufferFromStorage(str: string): Uint8Array {
 }
 
 /**
- * Converts a buffer into a hex string ready for storage
- * @param {Uint8Array} buffer - Buffer to serialize
- * @returns {string} hex encoded string
+ * Converts a buffer into a hex string ready for storage.
+ *
+ * @param buffer - Buffer to serialize.
+ * @returns A hex encoded string.
  */
 export function serializeBufferForStorage(buffer: Uint8Array): string {
   let result = '0x';
@@ -272,8 +283,9 @@ export function serializeBufferForStorage(buffer: Uint8Array): string {
 /**
  * Converts a number into hex value, and ensures proper leading 0
  * for single characters strings.
- * @param {number} num - number to convert to string
- * @returns {string} hex string
+ *
+ * @param num - The number to convert to string.
+ * @returns An unprefixed hex string.
  */
 function unprefixedHex(num: number): string {
   let hex = num.toString(16);
@@ -284,9 +296,10 @@ function unprefixedHex(num: number): string {
 }
 
 /**
- * Generates a random string for use as a salt in CryptoKey generation
- * @param {number} byteCount - Number of bytes to generate
- * @returns {string} randomly generated string
+ * Generates a random string for use as a salt in CryptoKey generation.
+ *
+ * @param byteCount - The number of bytes to generate.
+ * @returns A randomly generated string.
  */
 export function generateSalt(byteCount = 32): string {
   const view = new Uint8Array(byteCount);
