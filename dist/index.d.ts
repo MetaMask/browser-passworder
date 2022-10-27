@@ -1,6 +1,6 @@
 interface DetailedEncryptionResult {
     vault: string;
-    extractedKeyString: string;
+    exportedKeyString: string;
 }
 interface EncryptionResult {
     data: string;
@@ -8,7 +8,7 @@ interface EncryptionResult {
     salt?: string;
 }
 interface DetailedDecryptResult {
-    extractedKeyString: string;
+    exportedKeyString: string;
     vault: unknown;
     salt: string;
 }
@@ -22,14 +22,14 @@ interface DetailedDecryptResult {
  * @param {string} salt - salt used to encrypt
  * @returns {Promise<string>} cypher text
  */
-declare function encrypt<R>(password: string, dataObj: R, key: CryptoKey, salt?: string): Promise<string>;
+declare function encrypt<R>(password: string, dataObj: R, key?: CryptoKey, salt?: string): Promise<string>;
 /**
  * Encrypts a data object that can be any serializable value using
  * a provided password.
  *
  * @param {string} password - password to use for encryption
  * @param {R} dataObj - data to encrypt
- * @returns {Promise<DetailedEncryptionResult>} object with vault and extractedKeyString
+ * @returns {Promise<DetailedEncryptionResult>} object with vault and exportedKeyString
  */
 declare function encryptWithDetail<R>(password: string, dataObj: R): Promise<DetailedEncryptionResult>;
 /**
@@ -49,7 +49,7 @@ declare function encryptWithKey<R>(key: CryptoKey, dataObj: R): Promise<Encrypti
  * @param {CryptoKey} key - a key to use for decrypting
  * @returns {object}
  */
-declare function decrypt(password: string, text: string, key: CryptoKey): Promise<unknown>;
+declare function decrypt(password: string, text: string, key?: CryptoKey): Promise<unknown>;
 /**
  * Given a password and a cypher text, decrypts the text and returns
  * the resulting value, keyString, and salt
@@ -58,14 +58,6 @@ declare function decrypt(password: string, text: string, key: CryptoKey): Promis
  * @returns {object}
  */
 declare function decryptWithDetail(password: string, text: string): Promise<DetailedDecryptResult>;
-/**
- * Receives an exported CryptoKey string, creates a key,
- * and decrypts cipher text with the reconstructed key
- * @param {string} password - password to decrypt with
- * @param {string} text - cypher text to decrypt
- * @returns {object}
- */
-declare function decryptWithEncryptedKeyString(keyString: string, data: string): Promise<unknown>;
 /**
  * Receives an exported CryptoKey string and creates a key
  * @param {string} keyString - keyString to import
@@ -112,7 +104,6 @@ declare const _default: {
     encryptWithDetail: typeof encryptWithDetail;
     decryptWithDetail: typeof decryptWithDetail;
     createKeyFromString: typeof createKeyFromString;
-    decryptWithEncryptedKeyString: typeof decryptWithEncryptedKeyString;
     serializeBufferForStorage: typeof serializeBufferForStorage;
     serializeBufferFromStorage: typeof serializeBufferFromStorage;
     generateSalt: typeof generateSalt;

@@ -24,16 +24,16 @@ async function encrypt(password, dataObj, key, salt = generateSalt()) {
  *
  * @param {string} password - password to use for encryption
  * @param {R} dataObj - data to encrypt
- * @returns {Promise<DetailedEncryptionResult>} object with vault and extractedKeyString
+ * @returns {Promise<DetailedEncryptionResult>} object with vault and exportedKeyString
  */
 async function encryptWithDetail(password, dataObj) {
     const salt = generateSalt();
     const key = await keyFromPassword(password, salt);
-    const extractedKeyString = await exportKey(key);
+    const exportedKeyString = await exportKey(key);
     const vault = await encrypt(password, dataObj, key, salt);
     return {
         vault,
-        extractedKeyString,
+        exportedKeyString,
     };
 }
 /**
@@ -86,25 +86,13 @@ async function decryptWithDetail(password, text) {
     const payload = JSON.parse(text);
     const { salt } = payload;
     const key = await keyFromPassword(password, salt);
-    const extractedKeyString = await exportKey(key);
-    const vault = decrypt(password, text, key);
+    const exportedKeyString = await exportKey(key);
+    const vault = await decrypt(password, text, key);
     return {
-        extractedKeyString,
+        exportedKeyString,
         vault,
         salt,
     };
-}
-/**
- * Receives an exported CryptoKey string, creates a key,
- * and decrypts cipher text with the reconstructed key
- * @param {string} password - password to decrypt with
- * @param {string} text - cypher text to decrypt
- * @returns {object}
- */
-async function decryptWithEncryptedKeyString(keyString, data) {
-    const key = await createKeyFromString(keyString);
-    const payload = await decryptWithKey(key, JSON.parse(data));
-    return payload;
 }
 /**
  * Receives an exported CryptoKey string and creates a key
@@ -230,7 +218,6 @@ module.exports = {
     encryptWithDetail,
     decryptWithDetail,
     createKeyFromString,
-    decryptWithEncryptedKeyString,
     // Buffer <-> Hex string methods
     serializeBufferForStorage,
     serializeBufferFromStorage,
