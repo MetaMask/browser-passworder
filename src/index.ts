@@ -47,13 +47,14 @@ export async function encrypt<R>(
  *
  * @param {string} password - password to use for encryption
  * @param {R} dataObj - data to encrypt
+ * @param {R} salt - salt used to encrypt
  * @returns {Promise<DetailedEncryptionResult>} object with vault and exportedKeyString
  */
 export async function encryptWithDetail<R>(
   password: string,
   dataObj: R,
+  salt = generateSalt(),
 ): Promise<DetailedEncryptionResult> {
-  const salt = generateSalt();
   const key = await keyFromPassword(password, salt);
   const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
@@ -200,7 +201,7 @@ export async function createKeyFromString(
  * @param {CryptoKey} key - key to export
  * @returns {string}
  */
-async function exportKey(key: CryptoKey): Promise<string> {
+export async function exportKey(key: CryptoKey): Promise<string> {
   const exportedKey = await window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
   return JSON.stringify(exportedKey);
 }
