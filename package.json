@@ -29,8 +29,8 @@
   "scripts": {
     "setup": "yarn install && yarn allow-scripts",
     "build": "tsc",
-    "test": "testem ci -P 2",
-    "buildTest": "yarn build && browserify test/index.js -o test/bundle.js",
+    "test": "yarn buildTest && playwright test",
+    "buildTest": "yarn build && browserify dist/index.js --standalone encryptor -o test/bundle.js",
     "lint:eslint": "eslint . --cache --ext js,ts",
     "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:misc --check",
@@ -42,6 +42,7 @@
     "@metamask/eslint-config": "^7.0.1",
     "@metamask/eslint-config-nodejs": "^7.0.1",
     "@metamask/eslint-config-typescript": "^7.0.1",
+    "@playwright/test": "^1.27.1",
     "@types/node": "^14.14.5",
     "@typescript-eslint/eslint-plugin": "^4.28.1",
     "@typescript-eslint/parser": "^4.28.1",
@@ -51,9 +52,9 @@
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
+    "playwright": "^1.27.1",
     "prettier": "^2.3.2",
     "prettier-plugin-packagejson": "^2.2.11",
-    "testem": "^3.4.2",
     "typescript": "^4.3.4"
   },
   "engines": {
@@ -65,7 +66,8 @@
   },
   "lavamoat": {
     "allowScripts": {
-      "@lavamoat/preinstall-always-fail": false
+      "@lavamoat/preinstall-always-fail": false,
+      "playwright": true
     }
   }
 }
