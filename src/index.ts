@@ -273,10 +273,9 @@ export function serializeBufferFromStorage(str: string): Uint8Array {
  */
 export function serializeBufferForStorage(buffer: Uint8Array): string {
   let result = '0x';
-  const len = buffer.length || buffer.byteLength;
-  for (let i = 0; i < len; i++) {
-    result += unprefixedHex(buffer[i]);
-  }
+  buffer.forEach((value) => {
+    result += unprefixedHex(value);
+  });
   return result;
 }
 
