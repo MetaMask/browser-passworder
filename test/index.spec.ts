@@ -111,6 +111,31 @@ test('encryptor:encryptWithDetail returns vault', async ({ page }) => {
   expect(typeof encryptedDetail.vault).toBe('string');
 });
 
+test('encryptor:encryptWithDetail returns expected key derivation options', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+
+  const { keyDerivationOptions } = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encryptWithDetail(args.password, args.data),
+    { data, password },
+  );
+  expect(keyDerivationOptions).toMatchObject({
+    importAlgorithm: 'PBKDF2',
+    derivationAlgorithm: {
+      name: 'PBKDF2',
+      iterations: 10000,
+      hash: 'SHA-256',
+    },
+    derivedKeyAlgorithm: {
+      name: 'AES-GCM',
+      length: 256,
+    },
+  });
+});
+
 test('encryptor:encrypt & decrypt with wrong password', async ({ page }) => {
   const password = 'a sample passw0rd';
   const wrongPassword = 'a wrong password';
@@ -216,10 +241,10 @@ test('encryptor:encrypt using key then decrypt', async ({ page }) => {
 
   const encryptedData = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.keyFromPassword(
-        args.password,
-        args.salt,
-      );
+      const { key } = await window.encryptor.keyFromPassword({
+        password: args.password,
+        salt: args.salt,
+      });
       return await window.encryptor.encryptWithKey(key, args.data);
     },
     { data, password, salt },
@@ -248,10 +273,10 @@ test('encryptor:encrypt using key then decrypt using wrong password', async ({
 
   const encryptedData = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.keyFromPassword(
-        args.password,
-        args.salt,
-      );
+      const { key } = await window.encryptor.keyFromPassword({
+        password: args.password,
+        salt: args.salt,
+      });
       return await window.encryptor.encryptWithKey(key, args.data);
     },
     { data, password, salt },
@@ -288,10 +313,10 @@ test('encryptor:encrypt then decrypt using key', async ({ page }) => {
 
   const decryptedData = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.keyFromPassword(
-        args.password,
-        args.salt,
-      );
+      const { key } = await window.encryptor.keyFromPassword({
+        password: args.password,
+        salt: args.salt,
+      });
       return await window.encryptor.decryptWithKey(key, args.encryptedPayload);
     },
     { encryptedPayload, password, salt },
@@ -319,10 +344,10 @@ test('encryptor:encrypt then decrypt using key derived from wrong password', asy
   await expect(
     page.evaluate(
       async (args) => {
-        const key = await window.encryptor.keyFromPassword(
-          args.wrongPassword,
-          args.salt,
-        );
+        const { key } = await window.encryptor.keyFromPassword({
+          password: args.wrongPassword,
+          salt: args.salt,
+        });
         return await window.encryptor.decryptWithKey(
           key,
           args.encryptedPayload,
@@ -344,10 +369,10 @@ test('encryptor:decrypt encrypted data using key', async ({ page }) => {
 
   const decryptedData = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.keyFromPassword(
-        args.password,
-        args.salt,
-      );
+      const { key } = await window.encryptor.keyFromPassword({
+        password: args.password,
+        salt: args.salt,
+      });
       return await window.encryptor.decryptWithKey(key, args.encryptedPayload);
     },
     { encryptedPayload, password, salt },
@@ -369,10 +394,10 @@ test('encryptor:decrypt encrypted data using key derived from wrong password', a
   await expect(
     page.evaluate(
       async (args) => {
-        const key = await window.encryptor.keyFromPassword(
-          args.wrongPassword,
-          args.salt,
-        );
+        const { key } = await window.encryptor.keyFromPassword({
+          password: args.wrongPassword,
+          salt: args.salt,
+        });
         return await window.encryptor.decryptWithKey(
           key,
           args.encryptedPayload,
