@@ -11,6 +11,9 @@ declare global {
 
 const testPagePath = path.resolve(__dirname, 'index.html');
 
+const SAMPLE_EXPORTED_KEY =
+  '{"alg":"A256GCM","ext":true,"k":"leW0IR00ACQp3SoWuITXQComCte7lwKLR9ztPlGkFeM","key_ops":["encrypt","decrypt"],"kty":"oct"}';
+
 test.beforeEach(async ({ page }) => {
   await page.goto(`file://${testPagePath}`);
 });
@@ -94,6 +97,18 @@ test('encryptor:encrypt & decrypt', async ({ page }) => {
   expect(decryptedObj).toStrictEqual(data);
 });
 
+test('encryptor:encryptWithDetail returns vault', async ({ page }) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+
+  const encryptedDetail = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encryptWithDetail(args.password, args.data),
+    { data, password },
+  );
+  expect(typeof encryptedDetail.vault).toBe('string');
+});
+
 test('encryptor:encrypt & decrypt with wrong password', async ({ page }) => {
   const password = 'a sample passw0rd';
   const wrongPassword = 'a wrong password';
@@ -159,6 +174,37 @@ test('encryptor:decrypt encrypted data using wrong password', async ({
       { sampleEncryptedData, wrongPassword },
     ),
   ).rejects.toThrow('Incorrect password');
+});
+
+test('encryptor:decryptWithDetail returns same vault as decrypt', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+
+  const decryptResult = await page.evaluate(
+    async (args) => {
+      return await window.encryptor.decrypt(
+        args.password,
+        JSON.stringify(args.sampleEncryptedData),
+      );
+    },
+    { password, sampleEncryptedData },
+  );
+
+  const decryptWithDetailResult = await page.evaluate(
+    async (args) => {
+      return await window.encryptor.decryptWithDetail(
+        args.password,
+        JSON.stringify(args.sampleEncryptedData),
+      );
+    },
+    { password, sampleEncryptedData },
+  );
+
+  expect(JSON.stringify(decryptResult)).toStrictEqual(
+    JSON.stringify(decryptWithDetailResult.vault),
+  );
+  expect(Object.keys(decryptWithDetailResult).length).toBe(3);
 });
 
 test('encryptor:encrypt using key then decrypt', async ({ page }) => {
@@ -333,4 +379,177 @@ test('encryptor:decrypt encrypted data using key derived from wrong password', a
       { encryptedPayload, salt, wrongPassword },
     ),
   ).rejects.toThrow('Incorrect password');
+});
+
+test('encryptor:importKey generates valid CryptoKey', async ({ page }) => {
+  const isKey = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.SAMPLE_EXPORTED_KEY);
+      return key instanceof CryptoKey;
+    },
+    { SAMPLE_EXPORTED_KEY },
+  );
+  expect(isKey).toBe(true);
+});
+
+test('encryptor:exportKey generates valid CryptoKey string', async ({
+  page,
+}) => {
+  const keyString = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.SAMPLE_EXPORTED_KEY);
+      return await window.encryptor.exportKey(key);
+    },
+    { SAMPLE_EXPORTED_KEY },
+  );
+  expect(keyString).toStrictEqual(SAMPLE_EXPORTED_KEY);
+});
+
+test('encryptor:encryptWithDetail and decryptWithDetail provide same data', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+
+  const { vault } = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encryptWithDetail(args.password, args.data),
+    { data, password },
+  );
+
+  const decryptedDetail = await page.evaluate(
+    async (args) =>
+      await window.encryptor.decryptWithDetail(args.password, args.data),
+    { data: vault, password },
+  );
+
+  expect(JSON.stringify(decryptedDetail.vault)).toStrictEqual(
+    JSON.stringify(data),
+  );
+});
+
+test('encryptor:decryptWithKey provide same data when using exported key from encryptWithDetail', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+
+  const { vault, exportedKeyString } = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encryptWithDetail(args.password, args.data),
+    { data, password },
+  );
+
+  // Use the exported key and vault to properly decrypt the data
+  const decryptWithKeyResult = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.keyString);
+      return await window.encryptor.decryptWithKey(key, JSON.parse(args.data));
+    },
+    { data: vault, keyString: exportedKeyString },
+  );
+
+  expect(JSON.stringify(decryptWithKeyResult)).toStrictEqual(
+    JSON.stringify(data),
+  );
+});
+
+test('encryptor:decryptWithDetail works with password after encryption with key', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const startingData = { foo: 'data to encrypt' };
+
+  // Get an exported key to use
+  const { salt, exportedKeyString } = await page.evaluate(
+    async (args) => {
+      const usedSalt = window.encryptor.generateSalt();
+      const { exportedKeyString: newKeyString } =
+        await window.encryptor.encryptWithDetail(
+          args.password,
+          args.data,
+          usedSalt,
+        );
+
+      return {
+        salt: usedSalt,
+        exportedKeyString: newKeyString,
+      };
+    },
+    { data: startingData, password },
+  );
+
+  // Update the data, encrypt using key
+  const newData = { ...startingData, bar: 'more data' };
+  const encryptWithKeyResult = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.keyString);
+      return await window.encryptor.encryptWithKey(key, args.data);
+    },
+    { data: newData, keyString: exportedKeyString },
+  );
+
+  // Mock the encrypted object
+  const decryptable = {
+    ...encryptWithKeyResult,
+    salt,
+  };
+
+  // Prove that a vault created with key can be decrypted with password
+  const decryptedResult = await page.evaluate(
+    async (args) =>
+      await window.encryptor.decryptWithDetail(args.password, args.data),
+    { password, data: JSON.stringify(decryptable) },
+  );
+
+  expect(JSON.stringify(decryptedResult.vault)).toStrictEqual(
+    JSON.stringify(newData),
+  );
+});
+
+test('encryptor:encryptWithKey works with decryptWithKey', async ({ page }) => {
+  const password = 'a sample passw0rd';
+  const startingData = { foo: 'data to encrypt' };
+
+  // Get an exported key to use
+  const exportedKeyString = await page.evaluate(
+    async (args) => {
+      const { exportedKeyString: newKeyString } =
+        await window.encryptor.encryptWithDetail(args.password, args.data);
+
+      return newKeyString;
+    },
+    { data: startingData, password },
+  );
+
+  // Update the data, encrypt using key
+  const newData = { ...startingData, bar: 'more data' };
+  const encryptWithKeyResult = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.keyString);
+      const result = await window.encryptor.encryptWithKey(key, args.data);
+
+      return {
+        encryptWithKeyResult: result,
+        exportedKeyString: await window.encryptor.exportKey(key),
+      };
+    },
+    { data: newData, keyString: exportedKeyString },
+  );
+
+  // Prove that a vault created with key can be decrypted with password
+  const decryptedResult = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.importKey(args.exportedKeyString);
+      return await window.encryptor.decryptWithKey(key, args.data);
+    },
+    {
+      exportedKeyString: encryptWithKeyResult.exportedKeyString,
+      data: encryptWithKeyResult.encryptWithKeyResult,
+    },
+  );
+
+  expect(JSON.stringify(decryptedResult)).toStrictEqual(
+    JSON.stringify(newData),
+  );
 });
