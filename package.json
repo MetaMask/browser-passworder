@@ -27,18 +27,18 @@
     "dist/"
   ],
   "scripts": {
-    "setup": "yarn install && yarn allow-scripts",
     "build": "tsc",
     "test": "yarn buildTest && playwright test",
     "buildTest": "yarn build && browserify dist/index.js --standalone encryptor -o test/bundle.js",
     "lint:eslint": "eslint . --cache --ext js,ts",
-    "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' --ignore-path .gitignore",
+    "lint:misc": "prettier '**/*.json' '**/*.md' '!CHANGELOG.md' '**/*.yml' '!.yarnrc.yml' --ignore-path .gitignore",
     "lint": "yarn lint:eslint && yarn lint:misc --check",
-    "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write"
+    "lint:fix": "yarn lint:eslint --fix && yarn lint:misc --write",
+    "prepack": "yarn build"
   },
   "devDependencies": {
-    "@lavamoat/allow-scripts": "^1.0.6",
-    "@metamask/auto-changelog": "^2.4.0",
+    "@lavamoat/allow-scripts": "^2.0.3",
+    "@metamask/auto-changelog": "^2.6.1",
     "@metamask/eslint-config": "^7.0.1",
     "@metamask/eslint-config-nodejs": "^7.0.1",
     "@metamask/eslint-config-typescript": "^7.0.1",
@@ -69,5 +69,6 @@
       "@lavamoat/preinstall-always-fail": false,
       "playwright": true
     }
-  }
+  },
+  "packageManager": "yarn@3.2.4"
 }
