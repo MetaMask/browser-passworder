@@ -381,14 +381,10 @@ test('encryptor:decrypt encrypted data using key derived from wrong password', a
   ).rejects.toThrow('Incorrect password');
 });
 
-test('encryptor:createKeyFromString generates valid CryptoKey', async ({
-  page,
-}) => {
+test('encryptor:importKey generates valid CryptoKey', async ({ page }) => {
   const isKey = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(
-        args.SAMPLE_EXPORTED_KEY,
-      );
+      const key = await window.encryptor.importKey(args.SAMPLE_EXPORTED_KEY);
       return key instanceof CryptoKey;
     },
     { SAMPLE_EXPORTED_KEY },
@@ -401,9 +397,7 @@ test('encryptor:exportKey generates valid CryptoKey string', async ({
 }) => {
   const keyString = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(
-        args.SAMPLE_EXPORTED_KEY,
-      );
+      const key = await window.encryptor.importKey(args.SAMPLE_EXPORTED_KEY);
       return await window.encryptor.exportKey(key);
     },
     { SAMPLE_EXPORTED_KEY },
@@ -449,7 +443,7 @@ test('encryptor:decryptWithKey provide same data when using exported key from en
   // Use the exported key and vault to properly decrypt the data
   const decryptWithKeyResult = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(args.keyString);
+      const key = await window.encryptor.importKey(args.keyString);
       return await window.encryptor.decryptWithKey(key, JSON.parse(args.data));
     },
     { data: vault, keyString: exportedKeyString },
@@ -489,7 +483,7 @@ test('encryptor:decryptWithDetail works with password after encryption with key'
   const newData = { ...startingData, bar: 'more data' };
   const encryptWithKeyResult = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(args.keyString);
+      const key = await window.encryptor.importKey(args.keyString);
       return await window.encryptor.encryptWithKey(key, args.data);
     },
     { data: newData, keyString: exportedKeyString },
@@ -532,7 +526,7 @@ test('encryptor:encryptWithKey works with decryptWithKey', async ({ page }) => {
   const newData = { ...startingData, bar: 'more data' };
   const encryptWithKeyResult = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(args.keyString);
+      const key = await window.encryptor.importKey(args.keyString);
       const result = await window.encryptor.encryptWithKey(key, args.data);
 
       return {
@@ -546,9 +540,7 @@ test('encryptor:encryptWithKey works with decryptWithKey', async ({ page }) => {
   // Prove that a vault created with key can be decrypted with password
   const decryptedResult = await page.evaluate(
     async (args) => {
-      const key = await window.encryptor.createKeyFromString(
-        args.exportedKeyString,
-      );
+      const key = await window.encryptor.importKey(args.exportedKeyString);
       return await window.encryptor.decryptWithKey(key, args.data);
     },
     {
