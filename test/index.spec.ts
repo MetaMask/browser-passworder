@@ -4,6 +4,8 @@ import { test, expect } from '@playwright/test';
 import * as Encryptor from '../src';
 
 declare global {
+  // Lint rule ignored to allow for declaration merging
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     encryptor: typeof Encryptor;
   }
