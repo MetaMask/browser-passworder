@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.0.1]
-### Uncategorized
-- Make the `prepack.sh` script executable ([#35](https://github.com/MetaMask/browser-passworder/pull/35))
+### Fixed
+- Fix publishing script ([#35](https://github.com/MetaMask/browser-passworder/pull/35))
+  - No functional changes from v4.0.0. This just makes it possible to publish to npm again. v4.0.0 was not published.
 
 ## [4.0.0]
 ### Added
