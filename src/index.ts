@@ -1,6 +1,7 @@
 type DetailedEncryptionResult = {
   vault: string;
   exportedKeyString: string;
+  keyDerivationOptions: KeyDerivationOptions;
 };
 
 type EncryptionResult = {
@@ -35,7 +36,7 @@ export async function encrypt<R>(
   key?: CryptoKey,
   salt: string = generateSalt(),
 ): Promise<string> {
-  const cryptoKey = key || (await keyFromPassword(password, salt));
+  const cryptoKey = key || (await keyFromPassword({ password, salt })).key;
   const payload = await encryptWithKey(cryptoKey, dataObj);
   payload.salt = salt;
   return JSON.stringify(payload);
@@ -55,13 +56,17 @@ export async function encryptWithDetail<R>(
   dataObj: R,
   salt = generateSalt(),
 ): Promise<DetailedEncryptionResult> {
-  const key = await keyFromPassword(password, salt);
+  const { key, keyDerivationOptions } = await keyFromPassword({
+    password,
+    salt,
+  });
   const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
 
   return {
     vault,
     exportedKeyString,
+    keyDerivationOptions,
   };
 }
 
@@ -117,7 +122,7 @@ export async function decrypt(
   const payload = JSON.parse(text);
   const { salt } = payload;
 
-  const cryptoKey = key || (await keyFromPassword(password, salt));
+  const cryptoKey = key || (await keyFromPassword({ password, salt })).key;
 
   const result = await decryptWithKey(cryptoKey, payload);
   return result;
@@ -137,7 +142,11 @@ export async function decryptWithDetail(
 ): Promise<DetailedDecryptResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
-  const key = await keyFromPassword(password, salt);
+
+  const { key } = await keyFromPassword({
+    password,
+    salt,
+  });
   const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
@@ -211,42 +220,93 @@ export async function exportKey(key: CryptoKey): Promise<string> {
   return JSON.stringify(exportedKey);
 }
 
+type AllowedImportAlgorithms = 'PBKDF2';
+type AllowedDerivationAlgorithms = {
+  name: 'PBKDF2';
+  iterations: 10000;
+  hash: 'SHA-256';
+};
+type AllowedDerivedKeyAlgorithms = {
+  name: 'AES-GCM';
+  length: 256;
+};
+
+export type KeyDerivationOptions = {
+  /**
+   * The algorithm used to import a key from the password
+   * (see {@link https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/importKey}).
+   */
+  importAlgorithm?: AllowedImportAlgorithms;
+  /**
+   * The algorithm used to derive an encryption/decryption key
+   * from the imported key (see {@link https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey}).
+   */
+  derivationAlgorithm?: AllowedDerivationAlgorithms;
+  /**
+   * The algorithm the derived key will be used for
+   * (see {@link https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey}).
+   */
+  derivedKeyAlgorithm?: AllowedDerivedKeyAlgorithms;
+};
+
 /**
  * Generate a CryptoKey from a password and random salt.
  *
- * @param password - The password to use to generate key.
- * @param salt - The salt string to use in key derivation.
- * @returns A CryptoKey for encryption and decryption.
+ * @param options - Key derivation options.
+ * @param options.password - The password to use to generate key.
+ * @param options.salt - The salt string to use in key derivation.
+ * @returns The derived key, along with all encryption options used.
  */
-export async function keyFromPassword(
-  password: string,
-  salt: string,
-): Promise<CryptoKey> {
+export async function keyFromPassword({
+  password,
+  salt,
+}: {
+  password: string;
+  salt: string;
+}): Promise<{
+  keyDerivationOptions: KeyDerivationOptions;
+  key: CryptoKey;
+}> {
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
+  const importAlgorithm = 'PBKDF2';
+  const derivationAlgorithm = {
+    name: 'PBKDF2' as const,
+    iterations: 10000 as const,
+    hash: 'SHA-256' as const,
+  };
+  const derivedKeyAlgorithm = {
+    name: 'AES-GCM' as const,
+    length: 256 as const,
+  };
 
   const key = await global.crypto.subtle.importKey(
     'raw',
     passBuffer,
-    { name: 'PBKDF2' },
+    importAlgorithm,
     false,
     ['deriveBits', 'deriveKey'],
   );
 
   const derivedKey = await global.crypto.subtle.deriveKey(
     {
-      name: 'PBKDF2',
+      ...derivationAlgorithm,
       salt: saltBuffer,
-      iterations: 10000,
-      hash: 'SHA-256',
     },
     key,
-    { name: DERIVED_KEY_FORMAT, length: 256 },
+    derivedKeyAlgorithm,
     true,
     ['encrypt', 'decrypt'],
   );
 
-  return derivedKey;
+  return {
+    key: derivedKey,
+    keyDerivationOptions: {
+      importAlgorithm,
+      derivationAlgorithm,
+      derivedKeyAlgorithm,
+    },
+  };
 }
 
 /**
