@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1]
+### Fixed
+- Fix publishing script ([#35](https://github.com/MetaMask/browser-passworder/pull/35))
+  - No functional changes from v4.0.0. This just makes it possible to publish to npm again. v4.0.0 was not published.
+
 ## [4.0.0]
 ### Added
 - Allow decrypting and encrypting with exported and imported keys ([#29](https://github.com/MetaMask/browser-passworder/pull/29))
@@ -24,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.0.1...HEAD
+[4.0.1]: https://github.com/MetaMask/browser-passworder/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/MetaMask/browser-passworder/compare/v3.0.0...v4.0.0
 [3.0.0]: https://github.com/MetaMask/browser-passworder/releases/tag/v3.0.0
