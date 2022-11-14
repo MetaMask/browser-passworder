@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.0.2]
-### Uncategorized
-- Restore derived key default exportable to false, provide option to make exportable ([#38](https://github.com/MetaMask/browser-passworder/pull/38))
-- Update publishing instructions ([#37](https://github.com/MetaMask/browser-passworder/pull/37))
+### Fixed
+- Restore derived key default exportable to `false`, provide option to make exportable ([#38](https://github.com/MetaMask/browser-passworder/pull/38))
+  - `keyFromPassword` will now default to generating a non-exportable key, just as it had prior to v4.
+  - This removes an unintended breaking change from v4
 
 ## [4.0.1]
 ### Fixed
