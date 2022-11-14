@@ -55,7 +55,7 @@ export async function encryptWithDetail<R>(
   dataObj: R,
   salt = generateSalt(),
 ): Promise<DetailedEncryptionResult> {
-  const key = await keyFromPassword(password, salt);
+  const key = await keyFromPassword(password, salt, true);
   const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
 
@@ -137,7 +137,7 @@ export async function decryptWithDetail(
 ): Promise<DetailedDecryptResult> {
   const payload = JSON.parse(text);
   const { salt } = payload;
-  const key = await keyFromPassword(password, salt);
+  const key = await keyFromPassword(password, salt, true);
   const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
@@ -216,11 +216,13 @@ export async function exportKey(key: CryptoKey): Promise<string> {
  *
  * @param password - The password to use to generate key.
  * @param salt - The salt string to use in key derivation.
+ * @param exportable - Should the derived key be exportable.
  * @returns A CryptoKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
   salt: string,
+  exportable = false,
 ): Promise<CryptoKey> {
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
@@ -242,7 +244,7 @@ export async function keyFromPassword(
     },
     key,
     { name: DERIVED_KEY_FORMAT, length: 256 },
-    true,
+    exportable,
     ['encrypt', 'decrypt'],
   );
 

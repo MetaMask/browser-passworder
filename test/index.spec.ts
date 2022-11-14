@@ -109,6 +109,7 @@ test('encryptor:encryptWithDetail returns vault', async ({ page }) => {
     { data, password },
   );
   expect(typeof encryptedDetail.vault).toBe('string');
+  expect(typeof encryptedDetail.exportedKeyString).toBe('string');
 });
 
 test('encryptor:encrypt & decrypt with wrong password', async ({ page }) => {
@@ -207,6 +208,9 @@ test('encryptor:decryptWithDetail returns same vault as decrypt', async ({
     JSON.stringify(decryptWithDetailResult.vault),
   );
   expect(Object.keys(decryptWithDetailResult).length).toBe(3);
+  expect(typeof decryptWithDetailResult.exportedKeyString).toStrictEqual(
+    'string',
+  );
 });
 
 test('encryptor:encrypt using key then decrypt', async ({ page }) => {
@@ -554,4 +558,31 @@ test('encryptor:encryptWithKey works with decryptWithKey', async ({ page }) => {
   expect(JSON.stringify(decryptedResult)).toStrictEqual(
     JSON.stringify(newData),
   );
+});
+
+test('encryptor:keyFromPassword cannot be exported by default', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+  const salt = await page.evaluate(() => window.encryptor.generateSalt());
+
+  const exportResult = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.keyFromPassword(
+        args.password,
+        args.salt,
+      );
+
+      try {
+        const result = await window.encryptor.exportKey(key);
+        return result;
+      } catch (e) {
+        return 'error';
+      }
+    },
+    { data, password, salt },
+  );
+
+  expect(exportResult).toStrictEqual('error');
 });
