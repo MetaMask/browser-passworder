@@ -188,7 +188,7 @@ export async function decryptWithKey<R>(
  * @returns A CryptoKey.
  */
 export async function importKey(keyString: string): Promise<CryptoKey> {
-  const key = await window.crypto.subtle.importKey(
+  const key = await global.crypto.subtle.importKey(
     EXPORT_FORMAT,
     JSON.parse(keyString),
     DERIVED_KEY_FORMAT,
@@ -207,7 +207,7 @@ export async function importKey(keyString: string): Promise<CryptoKey> {
  * @returns A key string.
  */
 export async function exportKey(key: CryptoKey): Promise<string> {
-  const exportedKey = await window.crypto.subtle.exportKey(EXPORT_FORMAT, key);
+  const exportedKey = await global.crypto.subtle.exportKey(EXPORT_FORMAT, key);
   return JSON.stringify(exportedKey);
 }
 
