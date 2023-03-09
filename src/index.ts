@@ -1,15 +1,15 @@
-type DetailedEncryptionResult = {
+export type DetailedEncryptionResult = {
   vault: string;
   exportedKeyString: string;
 };
 
-type EncryptionResult = {
+export type EncryptionResult = {
   data: string;
   iv: string;
   salt?: string;
 };
 
-type DetailedDecryptResult = {
+export type DetailedDecryptResult = {
   exportedKeyString: string;
   vault: unknown;
   salt: string;
