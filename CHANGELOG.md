@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.1.0]
-### Uncategorized
+### Changed
 - Export data types ([#45](https://github.com/MetaMask/browser-passworder/pull/45))
+  - This module now exports the following date types: `DetailedEncryptionResult`, `DetailedDecryptResult`, and `EncryptionResult`
 
 ## [4.0.2]
 ### Fixed
