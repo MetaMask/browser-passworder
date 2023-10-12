@@ -3,10 +3,16 @@ export type DetailedEncryptionResult = {
   exportedKeyString: string;
 };
 
+export enum EncryptionResultVersion {
+  V1 = '1.0',
+  V2 = '2.0',
+}
+
 export type EncryptionResult = {
   data: string;
   iv: string;
   salt?: string;
+  version?: EncryptionResultVersion;
 };
 
 export type DetailedDecryptResult = {
@@ -18,6 +24,10 @@ export type DetailedDecryptResult = {
 const EXPORT_FORMAT = 'jwk';
 const DERIVED_KEY_FORMAT = 'AES-GCM';
 const STRING_ENCODING = 'utf-8';
+const KEY_DERIVATION_ITERATIONS = {
+  [EncryptionResultVersion.V1]: 10000,
+  [EncryptionResultVersion.V2]: 600000,
+};
 
 /**
  * Encrypts a data object that can be any serializable value using
@@ -27,6 +37,7 @@ const STRING_ENCODING = 'utf-8';
  * @param dataObj - The data to encrypt.
  * @param key - The CryptoKey to encrypt with.
  * @param salt - The salt to use to encrypt.
+ * @param version - The encryption version to use.
  * @returns The encrypted vault.
  */
 export async function encrypt<R>(
@@ -34,9 +45,12 @@ export async function encrypt<R>(
   dataObj: R,
   key?: CryptoKey,
   salt: string = generateSalt(),
+  version = EncryptionResultVersion.V2,
 ): Promise<string> {
-  const cryptoKey = key || (await keyFromPassword(password, salt));
-  const payload = await encryptWithKey(cryptoKey, dataObj);
+  const cryptoKey =
+    key ||
+    (await keyFromPassword(password, salt, KEY_DERIVATION_ITERATIONS[version]));
+  const payload = await encryptWithKey(cryptoKey, dataObj, version);
   payload.salt = salt;
   return JSON.stringify(payload);
 }
@@ -48,16 +62,23 @@ export async function encrypt<R>(
  * @param password - A password to use for encryption.
  * @param dataObj - The data to encrypt.
  * @param salt - The salt used to encrypt.
+ * @param version - The encryption version to use.
  * @returns The vault and exported key string.
  */
 export async function encryptWithDetail<R>(
   password: string,
   dataObj: R,
   salt = generateSalt(),
+  version = EncryptionResultVersion.V2,
 ): Promise<DetailedEncryptionResult> {
-  const key = await keyFromPassword(password, salt, true);
+  const key = await keyFromPassword(
+    password,
+    salt,
+    KEY_DERIVATION_ITERATIONS[version],
+    true,
+  );
   const exportedKeyString = await exportKey(key);
-  const vault = await encrypt(password, dataObj, key, salt);
+  const vault = await encrypt(password, dataObj, key, salt, version);
 
   return {
     vault,
@@ -72,11 +93,13 @@ export async function encryptWithDetail<R>(
  *
  * @param key - The CryptoKey to encrypt with.
  * @param dataObj - A serializable JavaScript object to encrypt.
+ * @param version - The encryption version to use.
  * @returns The encrypted data.
  */
 export async function encryptWithKey<R>(
   key: CryptoKey,
   dataObj: R,
+  version = EncryptionResultVersion.V2,
 ): Promise<EncryptionResult> {
   const data = JSON.stringify(dataObj);
   const dataBuffer = Buffer.from(data, STRING_ENCODING);
@@ -95,6 +118,7 @@ export async function encryptWithKey<R>(
   const vectorStr = Buffer.from(vector).toString('base64');
   const vaultStr = Buffer.from(buffer).toString('base64');
   return {
+    version,
     data: vaultStr,
     iv: vectorStr,
   };
@@ -115,9 +139,35 @@ export async function decrypt(
   key?: CryptoKey,
 ): Promise<unknown> {
   const payload = JSON.parse(text);
-  const { salt } = payload;
+  const { salt, version } = payload;
 
-  const cryptoKey = key || (await keyFromPassword(password, salt));
+  if (key) {
+    return decryptWithKey(key, payload);
+  }
+
+  let cryptoKey: CryptoKey;
+  switch (version) {
+    case EncryptionResultVersion.V1:
+      cryptoKey = await keyFromPassword(
+        password,
+        salt,
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V1],
+      );
+      break;
+    case EncryptionResultVersion.V2:
+      cryptoKey = await keyFromPassword(
+        password,
+        salt,
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V2],
+      );
+      break;
+    default:
+      cryptoKey = await keyFromPassword(
+        password,
+        salt,
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V1],
+      );
+  }
 
   const result = await decryptWithKey(cryptoKey, payload);
   return result;
@@ -136,8 +186,36 @@ export async function decryptWithDetail(
   text: string,
 ): Promise<DetailedDecryptResult> {
   const payload = JSON.parse(text);
-  const { salt } = payload;
-  const key = await keyFromPassword(password, salt, true);
+  const { salt, version } = payload;
+  let key: CryptoKey;
+  switch (version) {
+    case EncryptionResultVersion.V1:
+      key = await keyFromPassword(
+        password,
+        salt,
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V1],
+        true,
+      );
+      break;
+    case EncryptionResultVersion.V2:
+      key = await keyFromPassword(
+        password,
+        salt,
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V2],
+        true,
+      );
+      break;
+    default:
+      key = await keyFromPassword(
+        password,
+        salt,
+        // This ensures compatibility with data encrypted with
+        // older versions, which may not even have a `version` property,
+        // and for those '1.0' should be inferred.
+        KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V1],
+        true,
+      );
+  }
   const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
@@ -216,12 +294,14 @@ export async function exportKey(key: CryptoKey): Promise<string> {
  *
  * @param password - The password to use to generate key.
  * @param salt - The salt string to use in key derivation.
+ * @param iterations - The number of iterations used to derive the key.
  * @param exportable - Should the derived key be exportable.
  * @returns A CryptoKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
   salt: string,
+  iterations = KEY_DERIVATION_ITERATIONS[EncryptionResultVersion.V2],
   exportable = false,
 ): Promise<CryptoKey> {
   const passBuffer = Buffer.from(password, STRING_ENCODING);
@@ -239,7 +319,7 @@ export async function keyFromPassword(
     {
       name: 'PBKDF2',
       salt: saltBuffer,
-      iterations: 10000,
+      iterations,
       hash: 'SHA-256',
     },
     key,
