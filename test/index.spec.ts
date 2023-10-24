@@ -137,14 +137,52 @@ test('encryptor:encrypt & decrypt with wrong password', async ({ page }) => {
 /**
  * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
  * encrypted using v2.0.3 of this library with the password
- * `a sample passw0rd`. This should be left unmodified, as it's used to test
- * that decrypting older encrypted data continues to work.
+ * `a sample passw0rd` and 10000 iterations. This should be left unmodified,
+ * as it's used to test that decrypting older encrypted data continues to work.
  */
-const sampleEncryptedData = {
+const oldSampleEncryptedData = {
   data: 'bfCvija6QfwqARmHsKT7ZR0GHi8yjz7iVEZodRVx3xI2yzFHwq7+B/U=',
   iv: 'N9s46G5sp37A7wtf3vo/LA==',
   salt: '+uzzUKmbAdwkjw8rILhJvZE9dOfz2ecF5Gtf7yNkyyE=',
 };
+
+/**
+ * This is the encrypted object `{ foo: 'data to encrypt' }`, which was
+ * encrypted using v5.0.0 of this library with the password
+ * `a sample passw0rd` and 900.000 iterations. This should be left unmodified,
+ * as it's used to test that decrypting older encrypted data continues to work.
+ */
+const sampleEncryptedData = {
+  data: 'WQbagUPb+XLvSR+U7sV9jzyS+5UZfVjBiWpmJjPOlJT93dJo9kltpls=',
+  iv: '7NsJ8mmL1DgC5LlsIyaIXA==',
+  salt: 'sysHvNRoWykN/JVUSpBwXhmp0llTMQabfY7zucEfAJg=',
+};
+
+test('encryptor:decrypt encrypted data with key derived with different number of iterations', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const expectedData = { foo: 'data to encrypt' };
+
+  const decryptedData = await page.evaluate(
+    async (args) => {
+      const key = await window.encryptor.keyFromPassword(
+        'a sample passw0rd',
+        args.oldSampleEncryptedData.salt,
+        true,
+        10_000,
+      );
+      return await window.encryptor.decrypt(
+        args.password,
+        JSON.stringify(args.oldSampleEncryptedData),
+        key,
+      );
+    },
+    { oldSampleEncryptedData, password },
+  );
+
+  expect(decryptedData).toStrictEqual(expectedData);
+});
 
 test('encryptor:decrypt encrypted data', async ({ page }) => {
   const password = 'a sample passw0rd';

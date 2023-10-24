@@ -217,12 +217,14 @@ export async function exportKey(key: CryptoKey): Promise<string> {
  * @param password - The password to use to generate key.
  * @param salt - The salt string to use in key derivation.
  * @param exportable - Should the derived key be exportable.
+ * @param iterations - The number of iterations to use in key derivation.
  * @returns A CryptoKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
   salt: string,
   exportable = false,
+  iterations = 900_000,
 ): Promise<CryptoKey> {
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
@@ -239,7 +241,7 @@ export async function keyFromPassword(
     {
       name: 'PBKDF2',
       salt: saltBuffer,
-      iterations: 10000,
+      iterations,
       hash: 'SHA-256',
     },
     key,
