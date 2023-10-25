@@ -14,7 +14,7 @@ declare global {
 const testPagePath = path.resolve(__dirname, 'index.html');
 
 const SAMPLE_EXPORTED_KEY =
-  '{"alg":"A256GCM","ext":true,"k":"leW0IR00ACQp3SoWuITXQComCte7lwKLR9ztPlGkFeM","key_ops":["encrypt","decrypt"],"kty":"oct"}';
+  '{"key":{"alg":"A256GCM","ext":true,"k":"leW0IR00ACQp3SoWuITXQComCte7lwKLR9ztPlGkFeM","key_ops":["encrypt","decrypt"],"kty":"oct"}}';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(`file://${testPagePath}`);
@@ -448,10 +448,10 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
     test('encryptor:importKey generates valid CryptoKey', async ({ page }) => {
       const isKey = await page.evaluate(
         async (args) => {
-          const key = await window.encryptor.importKey(
+          const encryptionKey = await window.encryptor.importKey(
             args.SAMPLE_EXPORTED_KEY,
           );
-          return key instanceof CryptoKey;
+          return encryptionKey.key instanceof CryptoKey;
         },
         { SAMPLE_EXPORTED_KEY },
       );

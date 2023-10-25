@@ -15,7 +15,12 @@ export type KeyDerivationOptions = {
 
 export type EncryptionKey = {
   key: CryptoKey;
-  derivationFunction: KeyDerivationOptions;
+  derivationFunction?: KeyDerivationOptions;
+};
+
+export type ExportedEncryptionKey = {
+  key: JsonWebKey;
+  derivationFunction?: KeyDerivationOptions;
 };
 
 export type EncryptionResult = {
@@ -123,7 +128,10 @@ export async function encryptWithKey<R>(
     iv: vectorStr,
   };
 
-  if (!(encryptionKey instanceof CryptoKey)) {
+  if (
+    !(encryptionKey instanceof CryptoKey) &&
+    encryptionKey.derivationFunction
+  ) {
     encryptionResult.keyMetadata = encryptionKey.derivationFunction;
   }
 
@@ -249,18 +257,26 @@ export async function decryptWithKey<R>(
  * Receives an exported CryptoKey string and creates a key.
  *
  * @param keyString - The key string to import.
- * @returns A CryptoKey.
+ * @returns An EncryptionKey.
  */
-export async function importKey(keyString: string): Promise<CryptoKey> {
-  const key = await window.crypto.subtle.importKey(
-    EXPORT_FORMAT,
-    JSON.parse(keyString),
-    DERIVED_KEY_FORMAT,
-    true,
-    ['encrypt', 'decrypt'],
-  );
+export async function importKey(keyString: string): Promise<EncryptionKey> {
+  const exportedEncryptionKey = JSON.parse(keyString);
 
-  return key;
+  const encryptionKey: EncryptionKey = {
+    key: await window.crypto.subtle.importKey(
+      EXPORT_FORMAT,
+      exportedEncryptionKey.key,
+      DERIVED_KEY_FORMAT,
+      true,
+      ['encrypt', 'decrypt'],
+    ),
+  };
+
+  if (exportedEncryptionKey.derivationFunction) {
+    encryptionKey.derivationFunction = exportedEncryptionKey.derivationFunction;
+  }
+
+  return encryptionKey;
 }
 
 /**
@@ -273,10 +289,20 @@ export async function importKey(keyString: string): Promise<CryptoKey> {
 export async function exportKey(
   encryptionKey: CryptoKey | EncryptionKey,
 ): Promise<string> {
-  const exportedKey = await window.crypto.subtle.exportKey(
-    EXPORT_FORMAT,
-    encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key,
-  );
+  const exportedKey: ExportedEncryptionKey = {
+    key: await window.crypto.subtle.exportKey(
+      EXPORT_FORMAT,
+      encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key,
+    ),
+  };
+
+  if (
+    !(encryptionKey instanceof CryptoKey) &&
+    encryptionKey.derivationFunction
+  ) {
+    exportedKey.derivationFunction = encryptionKey.derivationFunction;
+  }
+
   return JSON.stringify(exportedKey);
 }
 
