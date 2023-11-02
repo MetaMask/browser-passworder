@@ -14,7 +14,7 @@ declare global {
 const testPagePath = path.resolve(__dirname, 'index.html');
 
 const SAMPLE_EXPORTED_KEY =
-  '{"key":{"alg":"A256GCM","ext":true,"k":"leW0IR00ACQp3SoWuITXQComCte7lwKLR9ztPlGkFeM","key_ops":["encrypt","decrypt"],"kty":"oct"}}';
+  '{"alg":"A256GCM","ext":true,"k":"leW0IR00ACQp3SoWuITXQComCte7lwKLR9ztPlGkFeM","key_ops":["encrypt","decrypt"],"kty":"oct"}';
 
 test.beforeEach(async ({ page }) => {
   await page.goto(`file://${testPagePath}`);
@@ -159,11 +159,41 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
   keyMetadata: {
     algorithm: 'PBKDF2',
     params: {
-      exportable: true,
       iterations: 900000,
     },
   },
 };
+
+test('encryptor:decrypt old encrypted data and re-encrypt with password', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const expectedData = { foo: 'data to encrypt' };
+
+  const decryptedData = await page.evaluate(
+    async (args) =>
+      await window.encryptor.decrypt(
+        args.password,
+        JSON.stringify(args.encryptedData),
+      ),
+    { encryptedData: oldSampleEncryptedData, password },
+  );
+  const encryptedData: Encryptor.EncryptionResult = JSON.parse(
+    await page.evaluate(
+      async (args) => await window.encryptor.encrypt(args.password, args.data),
+      { data: decryptedData, password },
+    ),
+  );
+
+  expect(decryptedData).toStrictEqual(expectedData);
+  expect(encryptedData).toHaveProperty('keyMetadata');
+  expect(encryptedData.keyMetadata).toStrictEqual({
+    algorithm: 'PBKDF2',
+    params: {
+      iterations: 900000,
+    },
+  });
+});
 
 [sampleEncryptedData, oldSampleEncryptedData].forEach((testEncryptedData) => {
   test.describe(`${
@@ -323,6 +353,7 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
       const encryptedPayload = {
         data: encryptedData.data,
         iv: encryptedData.iv,
+        keyMetadata: encryptedData.keyMetadata,
       };
 
       const decryptedData = await page.evaluate(
@@ -330,6 +361,8 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
           const key = await window.encryptor.keyFromPassword(
             args.password,
             args.salt,
+            false,
+            args.encryptedPayload.keyMetadata,
           );
           return await window.encryptor.decryptWithKey(
             key,
@@ -389,15 +422,8 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
           const key = await window.encryptor.keyFromPassword(
             args.password,
             args.salt as string,
-            args.testEncryptedData.keyMetadata || {
-              algorithm: 'PBKDF2',
-              params: {
-                exportable: true,
-                // we assume that this is an old vault,
-                // so we use the old iteration count
-                iterations: 10_000,
-              },
-            },
+            false,
+            args.testEncryptedData.keyMetadata,
           );
           return await window.encryptor.decryptWithKey(
             key,
@@ -421,15 +447,8 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
             const key = await window.encryptor.keyFromPassword(
               args.wrongPassword,
               args.salt as string,
-              args.encryptedPayload.keyMetadata || {
-                algorithm: 'PBKDF2',
-                params: {
-                  exportable: true,
-                  // we assume that this is an old vault,
-                  // so we use the old iteration count
-                  iterations: 10_000,
-                },
-              },
+              false,
+              args.encryptedPayload.keyMetadata,
             );
             return await window.encryptor.decryptWithKey(
               key,
@@ -451,7 +470,7 @@ const sampleEncryptedData: Encryptor.EncryptionResult = {
           const encryptionKey = await window.encryptor.importKey(
             args.SAMPLE_EXPORTED_KEY,
           );
-          return encryptionKey.key instanceof CryptoKey;
+          return encryptionKey instanceof CryptoKey;
         },
         { SAMPLE_EXPORTED_KEY },
       );

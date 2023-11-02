@@ -4,8 +4,7 @@ export type DetailedEncryptionResult = {
 };
 
 export type PBKDF2Params = {
-  iterations?: number;
-  exportable?: boolean;
+  iterations: number;
 };
 
 export type KeyDerivationOptions = {
@@ -15,12 +14,12 @@ export type KeyDerivationOptions = {
 
 export type EncryptionKey = {
   key: CryptoKey;
-  derivationFunction?: KeyDerivationOptions;
+  derivationOptions: KeyDerivationOptions;
 };
 
 export type ExportedEncryptionKey = {
   key: JsonWebKey;
-  derivationFunction?: KeyDerivationOptions;
+  derivationOptions: KeyDerivationOptions;
 };
 
 export type EncryptionResult = {
@@ -40,6 +39,18 @@ export type DetailedDecryptResult = {
 const EXPORT_FORMAT = 'jwk';
 const DERIVED_KEY_FORMAT = 'AES-GCM';
 const STRING_ENCODING = 'utf-8';
+const OLD_DERIVATION_PARAMS: KeyDerivationOptions = {
+  algorithm: 'PBKDF2',
+  params: {
+    iterations: 10_000,
+  },
+};
+const DEFAULT_DERIVATION_PARAMS: KeyDerivationOptions = {
+  algorithm: 'PBKDF2',
+  params: {
+    iterations: 900_000,
+  },
+};
 
 /**
  * Encrypts a data object that can be any serializable value using
@@ -57,7 +68,9 @@ export async function encrypt<R>(
   key?: EncryptionKey | CryptoKey,
   salt: string = generateSalt(),
 ): Promise<string> {
-  const cryptoKey = key || (await keyFromPassword(password, salt));
+  const cryptoKey =
+    key ||
+    (await keyFromPassword(password, salt, false, DEFAULT_DERIVATION_PARAMS));
   const payload = await encryptWithKey(cryptoKey, dataObj);
   payload.salt = salt;
   return JSON.stringify(payload);
@@ -77,12 +90,12 @@ export async function encryptWithDetail<R>(
   dataObj: R,
   salt = generateSalt(),
 ): Promise<DetailedEncryptionResult> {
-  const key = await keyFromPassword(password, salt, {
-    algorithm: 'PBKDF2',
-    params: {
-      exportable: true,
-    },
-  });
+  const key = await keyFromPassword(
+    password,
+    salt,
+    true,
+    DEFAULT_DERIVATION_PARAMS,
+  );
   const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
 
@@ -130,9 +143,9 @@ export async function encryptWithKey<R>(
 
   if (
     !(encryptionKey instanceof CryptoKey) &&
-    encryptionKey.derivationFunction
+    encryptionKey.derivationOptions
   ) {
-    encryptionResult.keyMetadata = encryptionKey.derivationFunction;
+    encryptionResult.keyMetadata = encryptionKey.derivationOptions;
   }
 
   return encryptionResult;
@@ -160,21 +173,7 @@ export async function decrypt(
     cryptoKey =
       encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key;
   } else {
-    cryptoKey = (
-      await keyFromPassword(
-        password,
-        salt,
-        keyMetadata || {
-          algorithm: 'PBKDF2',
-          params: {
-            exportable: true,
-            // we assume that this is an old vault,
-            // so we use the old iteration count
-            iterations: 10_000,
-          },
-        },
-      )
-    ).key;
+    cryptoKey = (await keyFromPassword(password, salt, false, keyMetadata)).key;
   }
 
   const result = await decryptWithKey(cryptoKey, payload);
@@ -195,19 +194,7 @@ export async function decryptWithDetail(
 ): Promise<DetailedDecryptResult> {
   const payload = JSON.parse(text);
   const { salt, keyMetadata } = payload;
-  const key = await keyFromPassword(
-    password,
-    salt,
-    keyMetadata || {
-      algorithm: 'PBKDF2',
-      params: {
-        exportable: true,
-        // we assume that this is an old vault,
-        // so we use the old iteration count
-        iterations: 10_000,
-      },
-    },
-  );
+  const key = await keyFromPassword(password, salt, true, keyMetadata);
   const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
@@ -259,24 +246,31 @@ export async function decryptWithKey<R>(
  * @param keyString - The key string to import.
  * @returns An EncryptionKey.
  */
-export async function importKey(keyString: string): Promise<EncryptionKey> {
+export async function importKey(
+  keyString: string,
+): Promise<EncryptionKey | CryptoKey> {
   const exportedEncryptionKey = JSON.parse(keyString);
 
-  const encryptionKey: EncryptionKey = {
-    key: await window.crypto.subtle.importKey(
-      EXPORT_FORMAT,
-      exportedEncryptionKey.key,
-      DERIVED_KEY_FORMAT,
-      true,
-      ['encrypt', 'decrypt'],
-    ),
-  };
-
-  if (exportedEncryptionKey.derivationFunction) {
-    encryptionKey.derivationFunction = exportedEncryptionKey.derivationFunction;
+  if (isExportedEncryptionKey(exportedEncryptionKey)) {
+    return {
+      key: await window.crypto.subtle.importKey(
+        EXPORT_FORMAT,
+        exportedEncryptionKey.key,
+        DERIVED_KEY_FORMAT,
+        true,
+        ['encrypt', 'decrypt'],
+      ),
+      derivationOptions: exportedEncryptionKey.derivationOptions,
+    };
   }
 
-  return encryptionKey;
+  return await window.crypto.subtle.importKey(
+    EXPORT_FORMAT,
+    exportedEncryptionKey,
+    DERIVED_KEY_FORMAT,
+    true,
+    ['encrypt', 'decrypt'],
+  );
 }
 
 /**
@@ -289,21 +283,19 @@ export async function importKey(keyString: string): Promise<EncryptionKey> {
 export async function exportKey(
   encryptionKey: CryptoKey | EncryptionKey,
 ): Promise<string> {
-  const exportedKey: ExportedEncryptionKey = {
-    key: await window.crypto.subtle.exportKey(
-      EXPORT_FORMAT,
-      encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key,
-    ),
-  };
-
-  if (
-    !(encryptionKey instanceof CryptoKey) &&
-    encryptionKey.derivationFunction
-  ) {
-    exportedKey.derivationFunction = encryptionKey.derivationFunction;
+  if (isEncryptionKey(encryptionKey)) {
+    return JSON.stringify({
+      key: await window.crypto.subtle.exportKey(
+        EXPORT_FORMAT,
+        encryptionKey.key,
+      ),
+      derivationOptions: encryptionKey.derivationOptions,
+    });
   }
 
-  return JSON.stringify(exportedKey);
+  return JSON.stringify(
+    await window.crypto.subtle.exportKey(EXPORT_FORMAT, encryptionKey),
+  );
 }
 
 /**
@@ -311,20 +303,48 @@ export async function exportKey(
  *
  * @param password - The password to use to generate key.
  * @param salt - The salt string to use in key derivation.
+ * @param exportable - Whether or not the key should be exportable.
+ * @returns A CryptoKey for encryption and decryption.
+ */
+export async function keyFromPassword(
+  password: string,
+  salt: string,
+  exportable?: boolean,
+): Promise<CryptoKey>;
+/**
+ * Generate a CryptoKey from a password and random salt, specifying
+ * key derivation options.
+ *
+ * @param password - The password to use to generate key.
+ * @param salt - The salt string to use in key derivation.
+ * @param exportable - Whether or not the key should be exportable.
  * @param opts - The options to use for key derivation.
  * @returns A CryptoKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
   salt: string,
-  opts: KeyDerivationOptions = {
-    algorithm: 'PBKDF2',
-    params: {
-      iterations: 900_000,
-      exportable: false,
-    },
-  },
-): Promise<EncryptionKey> {
+  exportable?: boolean,
+  opts?: KeyDerivationOptions,
+): Promise<EncryptionKey>;
+/**
+ * Generate a CryptoKey from a password and random salt, optionally
+ * specifying key derivation options.
+ *
+ * When no derivation options are specified, the default options are used.
+ *
+ * @param password - The password to use to generate key.
+ * @param salt - The salt string to use in key derivation.
+ * @param exportable - Whether or not the key should be exportable.
+ * @param opts - The options to use for key derivation.
+ * @returns A CryptoKey for encryption and decryption.
+ */
+export async function keyFromPassword(
+  password: string,
+  salt: string,
+  exportable = false,
+  opts: KeyDerivationOptions = OLD_DERIVATION_PARAMS,
+): Promise<CryptoKey | EncryptionKey> {
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
 
@@ -340,19 +360,21 @@ export async function keyFromPassword(
     {
       name: 'PBKDF2',
       salt: saltBuffer,
-      iterations: opts.params.iterations || 900_000,
+      iterations: opts.params.iterations,
       hash: 'SHA-256',
     },
     key,
     { name: DERIVED_KEY_FORMAT, length: 256 },
-    opts.params.exportable || false,
+    exportable,
     ['encrypt', 'decrypt'],
   );
 
-  return {
-    key: derivedKey,
-    derivationFunction: opts,
-  };
+  return opts
+    ? {
+        key: derivedKey,
+        derivationOptions: opts,
+      }
+    : derivedKey;
 }
 
 /**
@@ -418,4 +440,33 @@ export function generateSalt(byteCount = 32): string {
     String.fromCharCode.apply(null, view as unknown as number[]),
   );
   return b64encoded;
+}
+
+/**
+ * Checks if the provided key is an `EncryptionKey`.
+ *
+ * @param key - The key to check.
+ * @returns Whether or not the key is an `EncryptionKey`.
+ */
+export function isEncryptionKey(
+  key: CryptoKey | EncryptionKey,
+): key is EncryptionKey {
+  return (
+    'key' in key &&
+    'derivationOptions' in key &&
+    'algorithm' in key.derivationOptions &&
+    'params' in key.derivationOptions
+  );
+}
+
+/**
+ * Checks if the provided key is an `ExportedEncryptionKey`.
+ *
+ * @param key - The key to check.
+ * @returns Whether or not the key is an `EncryptionKey`.
+ */
+export function isExportedEncryptionKey(
+  key: JsonWebKey | ExportedEncryptionKey,
+): key is ExportedEncryptionKey {
+  return 'key' in key && 'derivationOptions' in key;
 }
