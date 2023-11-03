@@ -319,7 +319,7 @@ export async function keyFromPassword(
  * @param salt - The salt string to use in key derivation.
  * @param exportable - Whether or not the key should be exportable.
  * @param opts - The options to use for key derivation.
- * @returns A CryptoKey for encryption and decryption.
+ * @returns An EncryptionKey for encryption and decryption.
  */
 export async function keyFromPassword(
   password: string,
@@ -327,18 +327,8 @@ export async function keyFromPassword(
   exportable?: boolean,
   opts?: KeyDerivationOptions,
 ): Promise<EncryptionKey>;
-/**
- * Generate a CryptoKey from a password and random salt, optionally
- * specifying key derivation options.
- *
- * When no derivation options are specified, the default options are used.
- *
- * @param password - The password to use to generate key.
- * @param salt - The salt string to use in key derivation.
- * @param exportable - Whether or not the key should be exportable.
- * @param opts - The options to use for key derivation.
- * @returns A CryptoKey for encryption and decryption.
- */
+// The overloads are already documented.
+// eslint-disable-next-line jsdoc/require-jsdoc
 export async function keyFromPassword(
   password: string,
   salt: string,
@@ -445,28 +435,53 @@ export function generateSalt(byteCount = 32): string {
 /**
  * Checks if the provided key is an `EncryptionKey`.
  *
- * @param key - The key to check.
+ * @param encryptionKey - The object to check.
  * @returns Whether or not the key is an `EncryptionKey`.
  */
 export function isEncryptionKey(
-  key: CryptoKey | EncryptionKey,
-): key is EncryptionKey {
+  encryptionKey: unknown,
+): encryptionKey is EncryptionKey {
   return (
-    'key' in key &&
-    'derivationOptions' in key &&
-    'algorithm' in key.derivationOptions &&
-    'params' in key.derivationOptions
+    encryptionKey !== null &&
+    typeof encryptionKey === 'object' &&
+    'key' in encryptionKey &&
+    'derivationOptions' in encryptionKey &&
+    encryptionKey.key instanceof CryptoKey &&
+    isKeyDerivationOptions(encryptionKey.derivationOptions)
+  );
+}
+
+/**
+ * Checks if the provided object is a `KeyDerivationOptions`.
+ *
+ * @param derivationOptions - The object to check.
+ * @returns Whether or not the object is a `KeyDerivationOptions`.
+ */
+export function isKeyDerivationOptions(
+  derivationOptions: unknown,
+): derivationOptions is KeyDerivationOptions {
+  return (
+    derivationOptions !== null &&
+    typeof derivationOptions === 'object' &&
+    'algorithm' in derivationOptions &&
+    'params' in derivationOptions
   );
 }
 
 /**
  * Checks if the provided key is an `ExportedEncryptionKey`.
  *
- * @param key - The key to check.
- * @returns Whether or not the key is an `EncryptionKey`.
+ * @param exportedKey - The object to check.
+ * @returns Whether or not the object is an `ExportedEncryptionKey`.
  */
 export function isExportedEncryptionKey(
-  key: JsonWebKey | ExportedEncryptionKey,
-): key is ExportedEncryptionKey {
-  return 'key' in key && 'derivationOptions' in key;
+  exportedKey: unknown,
+): exportedKey is ExportedEncryptionKey {
+  return (
+    exportedKey !== null &&
+    typeof exportedKey === 'object' &&
+    'key' in exportedKey &&
+    'derivationOptions' in exportedKey &&
+    isKeyDerivationOptions(exportedKey.derivationOptions)
+  );
 }
