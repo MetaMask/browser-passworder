@@ -752,3 +752,71 @@ test.describe('encryptor:isExportedEncryptionKey', async () => {
     expect(isEncryptionKey).toBe(true);
   });
 });
+
+test('encryptor:encrypt with arbitrary key derivation options then decrypt', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+  const salt = await page.evaluate(() => window.encryptor.generateSalt());
+
+  const encryptedString = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encrypt(
+        args.password,
+        args.data,
+        undefined,
+        args.salt,
+        {
+          algorithm: 'PBKDF2',
+          params: {
+            iterations: 100_000,
+          },
+        },
+      ),
+    { data, password, salt },
+  );
+
+  const decryptedObj = await page.evaluate(
+    async (args) =>
+      await window.encryptor.decrypt(args.password, args.encryptedString),
+    { encryptedString, password },
+  );
+
+  expect(decryptedObj).toStrictEqual(data);
+});
+
+test('encryptor:encryptWithDetail with arbitrary key derivation options then decrypt', async ({
+  page,
+}) => {
+  const password = 'a sample passw0rd';
+  const data = { foo: 'data to encrypt' };
+  const salt = await page.evaluate(() => window.encryptor.generateSalt());
+
+  const { vault: encryptedString } = await page.evaluate(
+    async (args) =>
+      await window.encryptor.encryptWithDetail(
+        args.password,
+        args.data,
+        args.salt,
+        {
+          algorithm: 'PBKDF2',
+          params: {
+            iterations: 100_000,
+          },
+        },
+      ),
+    { data, password, salt },
+  );
+
+  const { vault: decryptedObj } = await page.evaluate(
+    async (args) =>
+      await window.encryptor.decryptWithDetail(
+        args.password,
+        args.encryptedString,
+      ),
+    { encryptedString, password },
+  );
+
+  expect(decryptedObj).toStrictEqual(data);
+});

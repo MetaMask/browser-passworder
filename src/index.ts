@@ -60,6 +60,7 @@ const DEFAULT_DERIVATION_PARAMS: KeyDerivationOptions = {
  * @param dataObj - The data to encrypt.
  * @param key - The CryptoKey to encrypt with.
  * @param salt - The salt to use to encrypt.
+ * @param keyDerivationOptions - The options to use for key derivation.
  * @returns The encrypted vault.
  */
 export async function encrypt<R>(
@@ -67,10 +68,10 @@ export async function encrypt<R>(
   dataObj: R,
   key?: EncryptionKey | CryptoKey,
   salt: string = generateSalt(),
+  keyDerivationOptions = DEFAULT_DERIVATION_PARAMS,
 ): Promise<string> {
   const cryptoKey =
-    key ||
-    (await keyFromPassword(password, salt, false, DEFAULT_DERIVATION_PARAMS));
+    key || (await keyFromPassword(password, salt, false, keyDerivationOptions));
   const payload = await encryptWithKey(cryptoKey, dataObj);
   payload.salt = salt;
   return JSON.stringify(payload);
@@ -83,19 +84,16 @@ export async function encrypt<R>(
  * @param password - A password to use for encryption.
  * @param dataObj - The data to encrypt.
  * @param salt - The salt used to encrypt.
+ * @param keyDerivationOptions - The options to use for key derivation.
  * @returns The vault and exported key string.
  */
 export async function encryptWithDetail<R>(
   password: string,
   dataObj: R,
   salt = generateSalt(),
+  keyDerivationOptions = DEFAULT_DERIVATION_PARAMS,
 ): Promise<DetailedEncryptionResult> {
-  const key = await keyFromPassword(
-    password,
-    salt,
-    true,
-    DEFAULT_DERIVATION_PARAMS,
-  );
+  const key = await keyFromPassword(password, salt, true, keyDerivationOptions);
   const exportedKeyString = await exportKey(key);
   const vault = await encrypt(password, dataObj, key, salt);
 
@@ -121,8 +119,7 @@ export async function encryptWithKey<R>(
   const data = JSON.stringify(dataObj);
   const dataBuffer = Buffer.from(data, STRING_ENCODING);
   const vector = global.crypto.getRandomValues(new Uint8Array(16));
-  const key =
-    encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key;
+  const key = unwrapKey(encryptionKey);
 
   const buf = await global.crypto.subtle.encrypt(
     {
@@ -141,10 +138,7 @@ export async function encryptWithKey<R>(
     iv: vectorStr,
   };
 
-  if (
-    !(encryptionKey instanceof CryptoKey) &&
-    encryptionKey.derivationOptions
-  ) {
+  if (isEncryptionKey(encryptionKey)) {
     encryptionResult.keyMetadata = encryptionKey.derivationOptions;
   }
 
@@ -167,14 +161,10 @@ export async function decrypt(
 ): Promise<unknown> {
   const payload = JSON.parse(text);
   const { salt, keyMetadata } = payload;
-  let cryptoKey: CryptoKey;
-
-  if (encryptionKey) {
-    cryptoKey =
-      encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key;
-  } else {
-    cryptoKey = (await keyFromPassword(password, salt, false, keyMetadata)).key;
-  }
+  const cryptoKey = unwrapKey(
+    encryptionKey ||
+      (await keyFromPassword(password, salt, false, keyMetadata)),
+  );
 
   const result = await decryptWithKey(cryptoKey, payload);
   return result;
@@ -219,8 +209,7 @@ export async function decryptWithKey<R>(
 ): Promise<R> {
   const encryptedData = Buffer.from(payload.data, 'base64');
   const vector = Buffer.from(payload.iv, 'base64');
-  const key =
-    encryptionKey instanceof CryptoKey ? encryptionKey : encryptionKey.key;
+  const key = unwrapKey(encryptionKey);
 
   let decryptedObj;
   try {
@@ -484,4 +473,15 @@ export function isExportedEncryptionKey(
     'derivationOptions' in exportedKey &&
     isKeyDerivationOptions(exportedKey.derivationOptions)
   );
+}
+
+/**
+ * Returns the `CryptoKey` from the provided encryption key.
+ * If the provided key is a `CryptoKey`, it is returned as is.
+ *
+ * @param encryptionKey - The key to unwrap.
+ * @returns The `CryptoKey` from the provided encryption key.
+ */
+export function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
+  return isEncryptionKey(encryptionKey) ? encryptionKey.key : encryptionKey;
 }
