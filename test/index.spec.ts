@@ -820,3 +820,96 @@ test('encryptor:encryptWithDetail with arbitrary key derivation options then dec
 
   expect(decryptedObj).toStrictEqual(data);
 });
+
+test.describe('encryptor:isVaultUpdated', async () => {
+  test('should return false with old value format', async ({ page }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) =>
+        window.encryptor.isVaultUpdated(JSON.stringify(args.vault)),
+      { vault: oldSampleEncryptedData },
+    );
+
+    expect(isVaultUpdated).toBe(false);
+  });
+
+  test('should return true with new value format', async ({ page }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) =>
+        window.encryptor.isVaultUpdated(JSON.stringify(args.vault)),
+      { vault: sampleEncryptedData },
+    );
+
+    expect(isVaultUpdated).toBe(true);
+  });
+});
+
+test.describe('encryptor:updateVault', async () => {
+  test.describe('with old vault format', async () => {
+    test('should return a vault encrypted with a key derived with new key derivation options', async ({
+      page,
+    }) => {
+      const updatedVault = await page.evaluate(
+        async (args) => {
+          const vault = await window.encryptor.updateVault(
+            args.vault,
+            args.password,
+          );
+          return JSON.parse(vault);
+        },
+        {
+          vault: JSON.stringify(oldSampleEncryptedData),
+          password: 'a sample passw0rd',
+        },
+      );
+
+      expect(updatedVault).toHaveProperty('keyMetadata');
+      expect(updatedVault.keyMetadata).toStrictEqual(
+        sampleEncryptedData.keyMetadata,
+      );
+    });
+
+    test('should return a vault that can be decrypted with the same password', async ({
+      page,
+    }) => {
+      const password = 'a sample passw0rd';
+      const updatedVault = await page.evaluate(
+        async (args) => window.encryptor.updateVault(args.vault, args.password),
+        {
+          vault: JSON.stringify(oldSampleEncryptedData),
+          password,
+        },
+      );
+
+      const decryptedObj = await page.evaluate(
+        async (args) =>
+          await window.encryptor.decrypt(args.password, args.encryptedString),
+        {
+          encryptedString: updatedVault,
+          password,
+        },
+      );
+
+      expect(decryptedObj).toStrictEqual({ foo: 'data to encrypt' });
+    });
+  });
+
+  test.describe('with new vault format', async () => {
+    test('should return the same vault', async ({ page }) => {
+      const updatedVault = await page.evaluate(
+        async (args) => {
+          const vault = await window.encryptor.updateVault(
+            args.vault,
+            args.password,
+          );
+          return JSON.parse(vault);
+        },
+        {
+          vault: JSON.stringify(sampleEncryptedData),
+          password: 'a sample passw0rd',
+        },
+      );
+
+      expect(updatedVault).toStrictEqual(sampleEncryptedData);
+    });
+  });
+});

@@ -485,3 +485,41 @@ export function isExportedEncryptionKey(
 export function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
   return isEncryptionKey(encryptionKey) ? encryptionKey.key : encryptionKey;
 }
+
+/**
+ * Checks if the provided vault is an updated encryption format.
+ *
+ * @param vault - The vault to check.
+ * @returns Whether or not the vault is an updated encryption format.
+ */
+export function isVaultUpdated(vault: string): boolean {
+  const { keyMetadata } = JSON.parse(vault);
+  return (
+    isKeyDerivationOptions(keyMetadata) &&
+    keyMetadata.algorithm === DEFAULT_DERIVATION_PARAMS.algorithm &&
+    keyMetadata.params.iterations ===
+      DEFAULT_DERIVATION_PARAMS.params.iterations
+  );
+}
+
+/**
+ * Updates the provided vault, re-encrypting
+ * data with a safer algorithm if one is available.
+ *
+ * If the provided vault is already using the latest available encryption method,
+ * it is returned as is.
+ *
+ * @param vault - The vault to update.
+ * @param password - The password to use for encryption.
+ * @returns A promise resolving to the updated vault.
+ */
+export async function updateVault(
+  vault: string,
+  password: string,
+): Promise<string> {
+  if (isVaultUpdated(vault)) {
+    return vault;
+  }
+
+  return encrypt(password, await decrypt(password, vault));
+}
