@@ -37,6 +37,9 @@
     "prepack": "./scripts/prepack.sh",
     "test": "yarn buildTest && playwright test"
   },
+  "dependencies": {
+    "@metamask/utils": "^8.2.0"
+  },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^2.0.3",
     "@metamask/auto-changelog": "^2.6.1",

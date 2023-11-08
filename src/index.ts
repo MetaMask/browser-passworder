@@ -1,3 +1,5 @@
+import { hasProperty, isPlainObject } from '@metamask/utils';
+
 export type DetailedEncryptionResult = {
   vault: string;
   exportedKeyString: string;
@@ -431,10 +433,9 @@ export function isEncryptionKey(
   encryptionKey: unknown,
 ): encryptionKey is EncryptionKey {
   return (
-    encryptionKey !== null &&
-    typeof encryptionKey === 'object' &&
-    'key' in encryptionKey &&
-    'derivationOptions' in encryptionKey &&
+    isPlainObject(encryptionKey) &&
+    hasProperty(encryptionKey, 'key') &&
+    hasProperty(encryptionKey, 'derivationOptions') &&
     encryptionKey.key instanceof CryptoKey &&
     isKeyDerivationOptions(encryptionKey.derivationOptions)
   );
@@ -450,10 +451,9 @@ export function isKeyDerivationOptions(
   derivationOptions: unknown,
 ): derivationOptions is KeyDerivationOptions {
   return (
-    derivationOptions !== null &&
-    typeof derivationOptions === 'object' &&
-    'algorithm' in derivationOptions &&
-    'params' in derivationOptions
+    isPlainObject(derivationOptions) &&
+    hasProperty(derivationOptions, 'algorithm') &&
+    hasProperty(derivationOptions, 'params')
   );
 }
 
@@ -467,10 +467,9 @@ export function isExportedEncryptionKey(
   exportedKey: unknown,
 ): exportedKey is ExportedEncryptionKey {
   return (
-    exportedKey !== null &&
-    typeof exportedKey === 'object' &&
-    'key' in exportedKey &&
-    'derivationOptions' in exportedKey &&
+    isPlainObject(exportedKey) &&
+    hasProperty(exportedKey, 'key') &&
+    hasProperty(exportedKey, 'derivationOptions') &&
     isKeyDerivationOptions(exportedKey.derivationOptions)
   );
 }
