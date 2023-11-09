@@ -446,6 +446,31 @@ export async function updateVault(
 }
 
 /**
+ * Updates the provided vault and exported key, re-encrypting
+ * data with a safer algorithm if one is available.
+ *
+ * If the provided vault is already using the latest available encryption method,
+ * it is returned as is.
+ *
+ * @param encryptionResult - The encrypted data to update.
+ * @param password - The password to use for encryption.
+ * @returns A promise resolving to the updated encrypted data and exported key.
+ */
+export async function updateVaultWithDetail(
+  encryptionResult: DetailedEncryptionResult,
+  password: string,
+): Promise<DetailedEncryptionResult> {
+  if (isVaultUpdated(encryptionResult.vault)) {
+    return encryptionResult;
+  }
+
+  return encryptWithDetail(
+    password,
+    await decrypt(password, encryptionResult.vault),
+  );
+}
+
+/**
  * Checks if the provided key is an `EncryptionKey`.
  *
  * @param encryptionKey - The object to check.

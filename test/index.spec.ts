@@ -831,3 +831,87 @@ test.describe('encryptor:updateVault', async () => {
     });
   });
 });
+
+test.describe('encryptor:updateVaultWithDetail', async () => {
+  test.describe('with old vault format', async () => {
+    test('should return a vault encrypted with a key derived with new key derivation options', async ({
+      page,
+    }) => {
+      const detailedVault: Encryptor.DetailedEncryptionResult = {
+        vault: JSON.stringify(oldSampleEncryptedData),
+        exportedKeyString: OLD_SAMPLE_EXPORTED_KEY,
+      };
+
+      const updatedVault = await page.evaluate(
+        async (args) =>
+          window.encryptor.updateVaultWithDetail(
+            args.detailedVault,
+            args.password,
+          ),
+        {
+          detailedVault,
+          password: 'a sample passw0rd',
+        },
+      );
+      const vault = JSON.parse(updatedVault.vault);
+
+      expect(vault).toHaveProperty('keyMetadata');
+      expect(vault.keyMetadata).toStrictEqual(sampleEncryptedData.keyMetadata);
+    });
+
+    test('should return a vault that can be decrypted with the same password', async ({
+      page,
+    }) => {
+      const password = 'a sample passw0rd';
+      const detailedVault: Encryptor.DetailedEncryptionResult = {
+        vault: JSON.stringify(oldSampleEncryptedData),
+        exportedKeyString: OLD_SAMPLE_EXPORTED_KEY,
+      };
+      const updatedVault = await page.evaluate(
+        async (args) =>
+          window.encryptor.updateVaultWithDetail(
+            args.detailedVault,
+            args.password,
+          ),
+        {
+          detailedVault,
+          password,
+        },
+      );
+
+      const decryptedObj = await page.evaluate(
+        async (args) =>
+          await window.encryptor.decrypt(args.password, args.encryptedString),
+        {
+          encryptedString: updatedVault.vault,
+          password,
+        },
+      );
+
+      expect(decryptedObj).toStrictEqual({ foo: 'data to encrypt' });
+    });
+  });
+
+  test.describe('with new vault format', async () => {
+    test('should return the same vault', async ({ page }) => {
+      const detailedVault: Encryptor.DetailedEncryptionResult = {
+        vault: JSON.stringify(sampleEncryptedData),
+        exportedKeyString: SAMPLE_EXPORTED_KEY,
+      };
+
+      const updatedVault = await page.evaluate(
+        async (args) =>
+          window.encryptor.updateVaultWithDetail(
+            args.detailedVault,
+            args.password,
+          ),
+        {
+          detailedVault,
+          password: 'a sample passw0rd',
+        },
+      );
+
+      expect(JSON.parse(updatedVault.vault)).toStrictEqual(sampleEncryptedData);
+    });
+  });
+});
