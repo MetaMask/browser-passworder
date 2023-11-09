@@ -424,84 +424,6 @@ export function generateSalt(byteCount = 32): string {
 }
 
 /**
- * Checks if the provided key is an `EncryptionKey`.
- *
- * @param encryptionKey - The object to check.
- * @returns Whether or not the key is an `EncryptionKey`.
- */
-export function isEncryptionKey(
-  encryptionKey: unknown,
-): encryptionKey is EncryptionKey {
-  return (
-    isPlainObject(encryptionKey) &&
-    hasProperty(encryptionKey, 'key') &&
-    hasProperty(encryptionKey, 'derivationOptions') &&
-    encryptionKey.key instanceof CryptoKey &&
-    isKeyDerivationOptions(encryptionKey.derivationOptions)
-  );
-}
-
-/**
- * Checks if the provided object is a `KeyDerivationOptions`.
- *
- * @param derivationOptions - The object to check.
- * @returns Whether or not the object is a `KeyDerivationOptions`.
- */
-export function isKeyDerivationOptions(
-  derivationOptions: unknown,
-): derivationOptions is KeyDerivationOptions {
-  return (
-    isPlainObject(derivationOptions) &&
-    hasProperty(derivationOptions, 'algorithm') &&
-    hasProperty(derivationOptions, 'params')
-  );
-}
-
-/**
- * Checks if the provided key is an `ExportedEncryptionKey`.
- *
- * @param exportedKey - The object to check.
- * @returns Whether or not the object is an `ExportedEncryptionKey`.
- */
-export function isExportedEncryptionKey(
-  exportedKey: unknown,
-): exportedKey is ExportedEncryptionKey {
-  return (
-    isPlainObject(exportedKey) &&
-    hasProperty(exportedKey, 'key') &&
-    hasProperty(exportedKey, 'derivationOptions') &&
-    isKeyDerivationOptions(exportedKey.derivationOptions)
-  );
-}
-
-/**
- * Returns the `CryptoKey` from the provided encryption key.
- * If the provided key is a `CryptoKey`, it is returned as is.
- *
- * @param encryptionKey - The key to unwrap.
- * @returns The `CryptoKey` from the provided encryption key.
- */
-export function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
-  return isEncryptionKey(encryptionKey) ? encryptionKey.key : encryptionKey;
-}
-
-/**
- * Checks if the provided vault is an updated encryption format.
- *
- * @param vault - The vault to check.
- * @returns Whether or not the vault is an updated encryption format.
- */
-export function isVaultUpdated(vault: string): boolean {
-  const { keyMetadata } = JSON.parse(vault);
-  return (
-    isKeyDerivationOptions(keyMetadata) &&
-    keyMetadata.algorithm === DEFAULT_DERIVATION_PARAMS.algorithm &&
-    keyMetadata.params.iterations ===
-      DEFAULT_DERIVATION_PARAMS.params.iterations
-  );
-}
-
-/**
  * Updates the provided vault, re-encrypting
  * data with a safer algorithm if one is available.
  *
@@ -521,4 +443,82 @@ export async function updateVault(
   }
 
   return encrypt(password, await decrypt(password, vault));
+}
+
+/**
+ * Checks if the provided key is an `EncryptionKey`.
+ *
+ * @param encryptionKey - The object to check.
+ * @returns Whether or not the key is an `EncryptionKey`.
+ */
+function isEncryptionKey(
+  encryptionKey: unknown,
+): encryptionKey is EncryptionKey {
+  return (
+    isPlainObject(encryptionKey) &&
+    hasProperty(encryptionKey, 'key') &&
+    hasProperty(encryptionKey, 'derivationOptions') &&
+    encryptionKey.key instanceof CryptoKey &&
+    isKeyDerivationOptions(encryptionKey.derivationOptions)
+  );
+}
+
+/**
+ * Checks if the provided object is a `KeyDerivationOptions`.
+ *
+ * @param derivationOptions - The object to check.
+ * @returns Whether or not the object is a `KeyDerivationOptions`.
+ */
+function isKeyDerivationOptions(
+  derivationOptions: unknown,
+): derivationOptions is KeyDerivationOptions {
+  return (
+    isPlainObject(derivationOptions) &&
+    hasProperty(derivationOptions, 'algorithm') &&
+    hasProperty(derivationOptions, 'params')
+  );
+}
+
+/**
+ * Checks if the provided key is an `ExportedEncryptionKey`.
+ *
+ * @param exportedKey - The object to check.
+ * @returns Whether or not the object is an `ExportedEncryptionKey`.
+ */
+function isExportedEncryptionKey(
+  exportedKey: unknown,
+): exportedKey is ExportedEncryptionKey {
+  return (
+    isPlainObject(exportedKey) &&
+    hasProperty(exportedKey, 'key') &&
+    hasProperty(exportedKey, 'derivationOptions') &&
+    isKeyDerivationOptions(exportedKey.derivationOptions)
+  );
+}
+
+/**
+ * Returns the `CryptoKey` from the provided encryption key.
+ * If the provided key is a `CryptoKey`, it is returned as is.
+ *
+ * @param encryptionKey - The key to unwrap.
+ * @returns The `CryptoKey` from the provided encryption key.
+ */
+function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
+  return isEncryptionKey(encryptionKey) ? encryptionKey.key : encryptionKey;
+}
+
+/**
+ * Checks if the provided vault is an updated encryption format.
+ *
+ * @param vault - The vault to check.
+ * @returns Whether or not the vault is an updated encryption format.
+ */
+function isVaultUpdated(vault: string): boolean {
+  const { keyMetadata } = JSON.parse(vault);
+  return (
+    isKeyDerivationOptions(keyMetadata) &&
+    keyMetadata.algorithm === DEFAULT_DERIVATION_PARAMS.algorithm &&
+    keyMetadata.params.iterations ===
+      DEFAULT_DERIVATION_PARAMS.params.iterations
+  );
 }

@@ -693,66 +693,6 @@ test('encryptor:decrypt old encrypted data and re-encrypt with password', async 
   });
 });
 
-test.describe('encryptor:isEncryptionKey', async () => {
-  test('should return false with CryptoKey', async ({ page }) => {
-    const isEncryptionKey = await page.evaluate(
-      async (args) => {
-        const encryptionKey = await window.encryptor.importKey(
-          args.OLD_SAMPLE_EXPORTED_KEY,
-        );
-        return window.encryptor.isEncryptionKey(encryptionKey);
-      },
-      { OLD_SAMPLE_EXPORTED_KEY },
-    );
-
-    expect(isEncryptionKey).toBe(false);
-  });
-
-  test('should return true with valid EncryptionKey', async ({ page }) => {
-    const isEncryptionKey = await page.evaluate(
-      async (args) => {
-        const encryptionKey = await window.encryptor.importKey(
-          args.SAMPLE_EXPORTED_KEY,
-        );
-        return window.encryptor.isEncryptionKey(encryptionKey);
-      },
-      { SAMPLE_EXPORTED_KEY },
-    );
-
-    expect(isEncryptionKey).toBe(true);
-  });
-});
-
-test.describe('encryptor:isExportedEncryptionKey', async () => {
-  test('should return false with JsonWebKey', async ({ page }) => {
-    const isEncryptionKey = await page.evaluate(
-      async (args) => {
-        return window.encryptor.isExportedEncryptionKey(
-          JSON.parse(args.OLD_SAMPLE_EXPORTED_KEY),
-        );
-      },
-      { OLD_SAMPLE_EXPORTED_KEY },
-    );
-
-    expect(isEncryptionKey).toBe(false);
-  });
-
-  test('should return true with valid ExportedEncryptionKey', async ({
-    page,
-  }) => {
-    const isEncryptionKey = await page.evaluate(
-      async (args) => {
-        return window.encryptor.isExportedEncryptionKey(
-          JSON.parse(args.SAMPLE_EXPORTED_KEY),
-        );
-      },
-      { SAMPLE_EXPORTED_KEY },
-    );
-
-    expect(isEncryptionKey).toBe(true);
-  });
-});
-
 test('encryptor:encrypt with arbitrary key derivation options then decrypt', async ({
   page,
 }) => {
@@ -819,28 +759,6 @@ test('encryptor:encryptWithDetail with arbitrary key derivation options then dec
   );
 
   expect(decryptedObj).toStrictEqual(data);
-});
-
-test.describe('encryptor:isVaultUpdated', async () => {
-  test('should return false with old value format', async ({ page }) => {
-    const isVaultUpdated = await page.evaluate(
-      async (args) =>
-        window.encryptor.isVaultUpdated(JSON.stringify(args.vault)),
-      { vault: oldSampleEncryptedData },
-    );
-
-    expect(isVaultUpdated).toBe(false);
-  });
-
-  test('should return true with new value format', async ({ page }) => {
-    const isVaultUpdated = await page.evaluate(
-      async (args) =>
-        window.encryptor.isVaultUpdated(JSON.stringify(args.vault)),
-      { vault: sampleEncryptedData },
-    );
-
-    expect(isVaultUpdated).toBe(true);
-  });
 });
 
 test.describe('encryptor:updateVault', async () => {
