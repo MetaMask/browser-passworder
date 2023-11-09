@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0]
+### Uncategorized
+- Add key derivation options support ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
+- chore: pin typescript minor version ([#50](https://github.com/MetaMask/browser-passworder/pull/50))
+- Update CODEOWNERS ([#47](https://github.com/MetaMask/browser-passworder/pull/47))
+
 ## [4.1.0]
 ### Changed
 - Export data types ([#45](https://github.com/MetaMask/browser-passworder/pull/45))
@@ -40,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...HEAD
+[4.2.0]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/MetaMask/browser-passworder/compare/v4.0.2...v4.1.0
 [4.0.2]: https://github.com/MetaMask/browser-passworder/compare/v4.0.1...v4.0.2
 [4.0.1]: https://github.com/MetaMask/browser-passworder/compare/v4.0.0...v4.0.1
