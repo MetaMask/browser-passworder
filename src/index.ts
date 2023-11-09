@@ -234,8 +234,11 @@ export async function decryptWithKey<R>(
 /**
  * Receives an exported CryptoKey string and creates a key.
  *
+ * This function supports both JsonWebKey's and exported EncryptionKey's.
+ * It will return a CryptoKey for the former, and an EncryptionKey for the latter.
+ *
  * @param keyString - The key string to import.
- * @returns An EncryptionKey.
+ * @returns An EncryptionKey or a CryptoKey.
  */
 export async function importKey(
   keyString: string,
@@ -265,10 +268,10 @@ export async function importKey(
 }
 
 /**
- * Receives an exported CryptoKey string, creates a key,
- * and decrypts cipher text with the reconstructed key.
+ * Exports a key string from a CryptoKey or from an
+ * EncryptionKey instance.
  *
- * @param encryptionKey - The CryptoKey to export.
+ * @param encryptionKey - The CryptoKey or EncryptionKey to export.
  * @returns A key string.
  */
 export async function exportKey(
