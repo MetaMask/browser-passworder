@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `decryptWithKey` method accepts both `EncryptionKey` and `CryptoKey` types as `key` argument ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
 - `importKey` method returns a `CryptoKey` when a JWK string is passed, or an `EncryptionKey` when an `ExportedEncryptionKey` string is passed. ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
 - `exportKey` method accepts both `EncryptionKey` and `CryptoKey` types as `key` argument, and returns an `ExportedEncryptionKey` for the former and a `JsonWebKey` for the latter. ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
-- chore: pin typescript minor version ([#50](https://github.com/MetaMask/browser-passworder/pull/50))
+- Pin TypeScript version to `~4.8.4` ([#50](https://github.com/MetaMask/browser-passworder/pull/50))
 
 ## [4.1.0]
 ### Changed
