@@ -915,3 +915,23 @@ test.describe('encryptor:updateVaultWithDetail', async () => {
     });
   });
 });
+
+test.describe('encryptor:isVaultUpdated', async () => {
+  test('should return true with new vault format', async ({ page }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) => window.encryptor.isVaultUpdated(args.vault),
+      { vault: JSON.stringify(sampleEncryptedData) },
+    );
+
+    expect(isVaultUpdated).toBe(true);
+  });
+
+  test('should return false with old vault format', async ({ page }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) => window.encryptor.isVaultUpdated(args.vault),
+      { vault: JSON.stringify(oldSampleEncryptedData) },
+    );
+
+    expect(isVaultUpdated).toBe(false);
+  });
+});
