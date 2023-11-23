@@ -541,7 +541,7 @@ function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
  * @param vault - The vault to check.
  * @returns Whether or not the vault is an updated encryption format.
  */
-function isVaultUpdated(vault: string): boolean {
+export function isVaultUpdated(vault: string): boolean {
   const { keyMetadata } = JSON.parse(vault);
   return (
     isKeyDerivationOptions(keyMetadata) &&
