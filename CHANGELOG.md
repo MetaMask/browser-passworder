@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [4.3.0]
-### Uncategorized
-- feat: expose isVaultUpdated ([#53](https://github.com/MetaMask/browser-passworder/pull/53))
+### Added
+- Added `isVaultUpdated` function to verify if a given vault was encrypted with the target encryption parameters. ([#53](https://github.com/MetaMask/browser-passworder/pull/53))
+- Added optional `targetDerivationParams` argument to `updateVault` and `updateVaultWithDetail`. ([#55](https://github.com/MetaMask/browser-passworder/pull/55))
+  - This argument allows to specify the desired parameters to use
 
 ## [4.2.0]
 ### Added
