@@ -435,17 +435,25 @@ export function generateSalt(byteCount = 32): string {
  *
  * @param vault - The vault to update.
  * @param password - The password to use for encryption.
+ * @param targetDerivationParams - The options to use for key derivation.
  * @returns A promise resolving to the updated vault.
  */
 export async function updateVault(
   vault: string,
   password: string,
+  targetDerivationParams = DEFAULT_DERIVATION_PARAMS,
 ): Promise<string> {
-  if (isVaultUpdated(vault)) {
+  if (isVaultUpdated(vault, targetDerivationParams)) {
     return vault;
   }
 
-  return encrypt(password, await decrypt(password, vault));
+  return encrypt(
+    password,
+    await decrypt(password, vault),
+    undefined,
+    undefined,
+    targetDerivationParams,
+  );
 }
 
 /**
@@ -457,19 +465,23 @@ export async function updateVault(
  *
  * @param encryptionResult - The encrypted data to update.
  * @param password - The password to use for encryption.
+ * @param targetDerivationParams - The options to use for key derivation.
  * @returns A promise resolving to the updated encrypted data and exported key.
  */
 export async function updateVaultWithDetail(
   encryptionResult: DetailedEncryptionResult,
   password: string,
+  targetDerivationParams = DEFAULT_DERIVATION_PARAMS,
 ): Promise<DetailedEncryptionResult> {
-  if (isVaultUpdated(encryptionResult.vault)) {
+  if (isVaultUpdated(encryptionResult.vault, targetDerivationParams)) {
     return encryptionResult;
   }
 
   return encryptWithDetail(
     password,
     await decrypt(password, encryptionResult.vault),
+    undefined,
+    targetDerivationParams,
   );
 }
 
@@ -539,14 +551,17 @@ function unwrapKey(encryptionKey: EncryptionKey | CryptoKey): CryptoKey {
  * Checks if the provided vault is an updated encryption format.
  *
  * @param vault - The vault to check.
+ * @param targetDerivationParams - The options to use for key derivation.
  * @returns Whether or not the vault is an updated encryption format.
  */
-export function isVaultUpdated(vault: string): boolean {
+export function isVaultUpdated(
+  vault: string,
+  targetDerivationParams = DEFAULT_DERIVATION_PARAMS,
+): boolean {
   const { keyMetadata } = JSON.parse(vault);
   return (
     isKeyDerivationOptions(keyMetadata) &&
-    keyMetadata.algorithm === DEFAULT_DERIVATION_PARAMS.algorithm &&
-    keyMetadata.params.iterations ===
-      DEFAULT_DERIVATION_PARAMS.params.iterations
+    keyMetadata.algorithm === targetDerivationParams.algorithm &&
+    keyMetadata.params.iterations === targetDerivationParams.params.iterations
   );
 }
