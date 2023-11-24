@@ -934,4 +934,38 @@ test.describe('encryptor:isVaultUpdated', async () => {
 
     expect(isVaultUpdated).toBe(false);
   });
+
+  test('should return false if vault does not match target params', async ({
+    page,
+  }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) =>
+        window.encryptor.isVaultUpdated(args.vault, {
+          algorithm: 'PBKDF2',
+          params: {
+            iterations: 100_000,
+          },
+        }),
+      { vault: JSON.stringify(sampleEncryptedData) },
+    );
+
+    expect(isVaultUpdated).toBe(false);
+  });
+
+  test('should return true if vault matches target params', async ({
+    page,
+  }) => {
+    const isVaultUpdated = await page.evaluate(
+      async (args) =>
+        window.encryptor.isVaultUpdated(args.vault, {
+          algorithm: 'PBKDF2',
+          params: {
+            iterations: 900_000,
+          },
+        }),
+      { vault: JSON.stringify(sampleEncryptedData) },
+    );
+
+    expect(isVaultUpdated).toBe(true);
+  });
 });
