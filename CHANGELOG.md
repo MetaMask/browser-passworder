@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0]
+### Uncategorized
+- feat: expose isVaultUpdated ([#53](https://github.com/MetaMask/browser-passworder/pull/53))
+
 ## [4.2.0]
 ### Added
 - Support key derivation options ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
@@ -62,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.3.0...HEAD
+[4.3.0]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/MetaMask/browser-passworder/compare/v4.0.2...v4.1.0
 [4.0.2]: https://github.com/MetaMask/browser-passworder/compare/v4.0.1...v4.0.2
