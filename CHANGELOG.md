@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0]
+### Added
+- Added `isVaultUpdated` function to verify if a given vault was encrypted with the target encryption parameters. ([#53](https://github.com/MetaMask/browser-passworder/pull/53))
+- Added optional `targetDerivationParams` argument to `updateVault` and `updateVaultWithDetail`. ([#55](https://github.com/MetaMask/browser-passworder/pull/55))
+  - This argument allows to specify the desired parameters to use
+
 ## [4.2.0]
 ### Added
 - Support key derivation options ([#49](https://github.com/MetaMask/browser-passworder/pull/49))
@@ -62,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.3.0...HEAD
+[4.3.0]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/MetaMask/browser-passworder/compare/v4.0.2...v4.1.0
 [4.0.2]: https://github.com/MetaMask/browser-passworder/compare/v4.0.1...v4.0.2
