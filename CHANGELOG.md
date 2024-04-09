@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0]
+### Changed
+- **BREAKING:** Increase minimum Node.js version to 16; recommended to 18 ([#52](https://github.com/MetaMask/browser-passworder/pull/52))
+- Use `globalThis` over `global` and `window` ([#60](https://github.com/MetaMask/browser-passworder/pull/60))
+
 ## [4.3.0]
 ### Added
 - Added `isVaultUpdated` function to verify if a given vault was encrypted with the target encryption parameters. ([#53](https://github.com/MetaMask/browser-passworder/pull/53))
@@ -68,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v4.3.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v5.0.0...HEAD
+[5.0.0]: https://github.com/MetaMask/browser-passworder/compare/v4.3.0...v5.0.0
 [4.3.0]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/MetaMask/browser-passworder/compare/v4.0.2...v4.1.0

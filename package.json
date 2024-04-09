@@ -1,6 +1,6 @@
 {
   "name": "@metamask/browser-passworder",
-  "version": "4.3.0",
+  "version": "5.0.0",
   "description": "A simple browserifiable module for password-encrypting JS objects.",
   "keywords": [
     "Browser",
