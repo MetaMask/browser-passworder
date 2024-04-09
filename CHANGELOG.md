@@ -7,10 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.0.0]
-### Uncategorized
-- Prefer `globalThis` over `global` and `window` ([#60](https://github.com/MetaMask/browser-passworder/pull/60))
-- ci: enabling MetaMask security code scanner ([#59](https://github.com/MetaMask/browser-passworder/pull/59))
-- BREAKING: Increase minimum Node.js version to 16; recommended to 18 ([#52](https://github.com/MetaMask/browser-passworder/pull/52))
+### Changed
+- **BREAKING:** Increase minimum Node.js version to 16; recommended to 18 ([#52](https://github.com/MetaMask/browser-passworder/pull/52))
+- Use `globalThis` over `global` and `window` ([#60](https://github.com/MetaMask/browser-passworder/pull/60))
 
 ## [4.3.0]
 ### Added
