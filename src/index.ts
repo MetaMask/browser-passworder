@@ -120,10 +120,10 @@ export async function encryptWithKey<R>(
 ): Promise<EncryptionResult> {
   const data = JSON.stringify(dataObj);
   const dataBuffer = Buffer.from(data, STRING_ENCODING);
-  const vector = global.crypto.getRandomValues(new Uint8Array(16));
+  const vector = globalThis.crypto.getRandomValues(new Uint8Array(16));
   const key = unwrapKey(encryptionKey);
 
-  const buf = await global.crypto.subtle.encrypt(
+  const buf = await globalThis.crypto.subtle.encrypt(
     {
       name: DERIVED_KEY_FORMAT,
       iv: vector,
@@ -247,7 +247,7 @@ export async function importKey(
 
   if (isExportedEncryptionKey(exportedEncryptionKey)) {
     return {
-      key: await window.crypto.subtle.importKey(
+      key: await globalThis.crypto.subtle.importKey(
         EXPORT_FORMAT,
         exportedEncryptionKey.key,
         DERIVED_KEY_FORMAT,
@@ -258,7 +258,7 @@ export async function importKey(
     };
   }
 
-  return await window.crypto.subtle.importKey(
+  return await globalThis.crypto.subtle.importKey(
     EXPORT_FORMAT,
     exportedEncryptionKey,
     DERIVED_KEY_FORMAT,
@@ -279,7 +279,7 @@ export async function exportKey(
 ): Promise<string> {
   if (isEncryptionKey(encryptionKey)) {
     return JSON.stringify({
-      key: await window.crypto.subtle.exportKey(
+      key: await globalThis.crypto.subtle.exportKey(
         EXPORT_FORMAT,
         encryptionKey.key,
       ),
@@ -288,7 +288,7 @@ export async function exportKey(
   }
 
   return JSON.stringify(
-    await window.crypto.subtle.exportKey(EXPORT_FORMAT, encryptionKey),
+    await globalThis.crypto.subtle.exportKey(EXPORT_FORMAT, encryptionKey),
   );
 }
 
@@ -332,7 +332,7 @@ export async function keyFromPassword(
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
 
-  const key = await global.crypto.subtle.importKey(
+  const key = await globalThis.crypto.subtle.importKey(
     'raw',
     passBuffer,
     { name: 'PBKDF2' },
@@ -340,7 +340,7 @@ export async function keyFromPassword(
     ['deriveBits', 'deriveKey'],
   );
 
-  const derivedKey = await global.crypto.subtle.deriveKey(
+  const derivedKey = await globalThis.crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: saltBuffer,
@@ -414,7 +414,7 @@ function unprefixedHex(num: number): string {
  */
 export function generateSalt(byteCount = 32): string {
   const view = new Uint8Array(byteCount);
-  global.crypto.getRandomValues(view);
+  globalThis.crypto.getRandomValues(view);
   // Uint8Array is a fixed length array and thus does not have methods like pop, etc
   // so TypeScript complains about casting it to an array. Array.from() works here for
   // getting the proper type, but it results in a functional difference. In order to
