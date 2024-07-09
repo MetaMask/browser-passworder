@@ -7,9 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [5.0.1]
-### Uncategorized
+### Changed
 - Bump `@metamask/utils` from `^8.2.0` to `^9.0.0` ([#63](https://github.com/MetaMask/browser-passworder/pull/63))
-- chore(devdeps): @lavamoat/allow-scripts@^2.0.3->^3.0.4 ([#62](https://github.com/MetaMask/browser-passworder/pull/62))
 
 ## [5.0.0]
 ### Changed
