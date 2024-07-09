@@ -38,7 +38,7 @@
     "test": "yarn buildTest && playwright test"
   },
   "dependencies": {
-    "@metamask/utils": "^8.2.0"
+    "@metamask/utils": "^9.0.0"
   },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^3.0.4",
