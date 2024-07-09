@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.1]
+### Changed
+- Bump `@metamask/utils` from `^8.2.0` to `^9.0.0` ([#63](https://github.com/MetaMask/browser-passworder/pull/63))
+
 ## [5.0.0]
 ### Changed
 - **BREAKING:** Increase minimum Node.js version to 16; recommended to 18 ([#52](https://github.com/MetaMask/browser-passworder/pull/52))
@@ -73,7 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Convert to TypeScript ([#6](https://github.com/MetaMask/browser-passworder/pull/6))
 - Remove `browserify-unibabel` dependency ([#13](https://github.com/MetaMask/browser-passworder/pull/13))
 
-[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v5.0.0...HEAD
+[Unreleased]: https://github.com/MetaMask/browser-passworder/compare/v5.0.1...HEAD
+[5.0.1]: https://github.com/MetaMask/browser-passworder/compare/v5.0.0...v5.0.1
 [5.0.0]: https://github.com/MetaMask/browser-passworder/compare/v4.3.0...v5.0.0
 [4.3.0]: https://github.com/MetaMask/browser-passworder/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/MetaMask/browser-passworder/compare/v4.1.0...v4.2.0
