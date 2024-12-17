@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [6.0.0]
-### Uncategorized
+### Changed
+- **BREAKING:** Increase minimum Node.js version to `^18.18` ([#66](https://github.com/MetaMask/browser-passworder/pull/66))
 - Bump `@metamask/utils` from `^9.0.0` to `^11.0.1` ([#67](https://github.com/MetaMask/browser-passworder/pull/67))
-- Drop support for Node.js `<18.18`, `21` ([#66](https://github.com/MetaMask/browser-passworder/pull/66))
 
 ## [5.0.1]
 ### Changed
