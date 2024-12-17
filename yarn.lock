@@ -171,7 +171,7 @@ __metadata:
     "@metamask/eslint-config-nodejs": ^10.0.0
     "@metamask/eslint-config-typescript": ^10.0.0
     "@metamask/utils": ^9.0.0
-    "@playwright/test": ^1.27.1
+    "@playwright/test": ^1.49.1
     "@types/node": ^14.14.5
     "@typescript-eslint/eslint-plugin": ^5.41.0
     "@typescript-eslint/parser": ^5.41.0
@@ -411,15 +411,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@playwright/test@npm:^1.27.1":
-  version: 1.27.1
-  resolution: "@playwright/test@npm:1.27.1"
+"@playwright/test@npm:^1.49.1":
+  version: 1.49.1
+  resolution: "@playwright/test@npm:1.49.1"
   dependencies:
-    "@types/node": "*"
-    playwright-core: 1.27.1
+    playwright: 1.49.1
   bin:
     playwright: cli.js
-  checksum: 92f219a78c21da03c6599d92c313c914e73cc374306366130fb3bd4701555179394ec5a3000d9375ce59f5a03c00f20d1ddaae50c85583ce475e17795a622699
+  checksum: cdbd16df3d773dc8e522d79b4b961e25c2e1b1d4f3ec45eb711078ab5d11bca47caafe833e2be2f923328fbd012405a9ee31d9b449d184077598546a36847e69
   languageName: node
   linkType: hard
 
@@ -3836,15 +3835,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.27.1":
-  version: 1.27.1
-  resolution: "playwright-core@npm:1.27.1"
-  bin:
-    playwright: cli.js
-  checksum: fd65d3eb29978e0e7a755158625e8922a66ca9d599b7c24ddf920822b261d81c51a5964ef8e0e5ed9b2b12dc64541c5949b6a898d965e107f43261964e8c29a0
-  languageName: node
-  linkType: hard
-
 "playwright-core@npm:1.49.1":
   version: 1.49.1
   resolution: "playwright-core@npm:1.49.1"
@@ -3854,7 +3844,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright@npm:^1.49.1":
+"playwright@npm:1.49.1, playwright@npm:^1.49.1":
   version: 1.49.1
   resolution: "playwright@npm:1.49.1"
   dependencies:
