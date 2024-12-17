@@ -57,7 +57,7 @@
     "eslint-plugin-jsdoc": "^39.3.25",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "playwright": "^1.27.1",
+    "playwright": "^1.49.1",
     "prettier": "^2.7.1",
     "prettier-plugin-packagejson": "^2.3.0",
     "rimraf": "^3.0.2",
