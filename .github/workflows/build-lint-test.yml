@@ -117,7 +117,7 @@ jobs:
           key: yarn-cache-${{ runner.os }}-${{ needs.prepare.outputs.YARN_VERSION }}-${{ hashFiles('yarn.lock') }}-${{ matrix.node-version }}
       - run: yarn --immutable
       - name: Install Playwright dependencies
-        run: sudo npx playwright install-deps
+        run: sudo yarn playwright install-deps
       - run: yarn test
       - name: Require clean working directory
         shell: bash
