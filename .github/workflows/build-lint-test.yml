@@ -118,6 +118,8 @@ jobs:
       - run: yarn --immutable
       - name: Install Playwright dependencies
         run: sudo yarn playwright install-deps
+      - name: Install Playwright
+        run: yarn playwright install
       - run: yarn test
       - name: Require clean working directory
         shell: bash
