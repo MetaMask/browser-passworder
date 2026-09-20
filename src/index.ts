@@ -54,6 +54,81 @@ const DEFAULT_DERIVATION_PARAMS: KeyDerivationOptions = {
   },
 };
 
+// Bounds applied to key-derivation options before they reach WebCrypto.
+// A vault is attacker-controllable input: without a lower bound a crafted
+// vault silently weakens the KDF, and without an upper bound a huge
+// iteration count exhausts the CPU on every unlock attempt. The ceiling is
+// a small multiple of the legitimate default (900,000): nothing genuine
+// needs more, and higher values turn a substituted vault into a UI freeze.
+const MIN_PBKDF2_ITERATIONS = 1_000;
+const MAX_PBKDF2_ITERATIONS = 3_000_000;
+
+// Minimum accepted salt length in bytes (128 bits). Shorter salts do not
+// provide enough entropy to guarantee per-vault KDF uniqueness.
+const MIN_SALT_BYTE_LENGTH = 16;
+
+/**
+ * Validates key-derivation options, whether they come from an untrusted
+ * vault or from a direct API call.
+ *
+ * @param opts - The key derivation options to validate.
+ * @throws If the options are malformed or out of bounds.
+ */
+function validateKeyDerivationOptions(opts: KeyDerivationOptions): void {
+  if (!isKeyDerivationOptions(opts)) {
+    throw new Error('Invalid key derivation options');
+  }
+  if (opts.algorithm !== 'PBKDF2') {
+    throw new Error(`Unsupported key derivation algorithm: ${opts.algorithm}`);
+  }
+  const { iterations } = opts.params;
+  if (
+    !Number.isSafeInteger(iterations) ||
+    iterations < MIN_PBKDF2_ITERATIONS ||
+    iterations > MAX_PBKDF2_ITERATIONS
+  ) {
+    throw new Error(
+      `Invalid PBKDF2 iteration count: must be an integer between ${MIN_PBKDF2_ITERATIONS} and ${MAX_PBKDF2_ITERATIONS}`,
+    );
+  }
+}
+
+/**
+ * Parses an untrusted vault string and validates its required fields.
+ * A raw `JSON.parse` error or a vault missing `data`, `iv`, or `salt`
+ * surfaces here as a single typed "invalid vault format" error instead of
+ * an unhandled `SyntaxError`/`TypeError` deeper in the decrypt path.
+ *
+ * @param text - The vault string to parse.
+ * @returns The validated vault payload.
+ */
+function parseVault(text: string): EncryptionResult & {
+  keyMetadata?: KeyDerivationOptions;
+} {
+  if (typeof text !== 'string') {
+    throw new Error('Invalid vault format: vault must be a string');
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Invalid vault format: vault is not valid JSON');
+  }
+  if (
+    !isPlainObject(payload) ||
+    typeof payload.data !== 'string' ||
+    typeof payload.iv !== 'string' ||
+    typeof payload.salt !== 'string'
+  ) {
+    throw new Error(
+      'Invalid vault format: missing or invalid data, iv, or salt fields',
+    );
+  }
+  return payload as EncryptionResult & {
+    keyMetadata?: KeyDerivationOptions;
+  };
+}
+
 /**
  * Encrypts a data object that can be any serializable value using
  * a provided password.
@@ -161,11 +236,19 @@ export async function decrypt(
   text: string,
   encryptionKey?: EncryptionKey | CryptoKey,
 ): Promise<unknown> {
-  const payload = JSON.parse(text);
+  const payload = parseVault(text);
   const { salt, keyMetadata } = payload;
   const cryptoKey = unwrapKey(
     encryptionKey ||
-      (await keyFromPassword(password, salt, false, keyMetadata)),
+      (await keyFromPassword(
+        password,
+        salt,
+        false,
+        // A vault without keyMetadata is a legacy vault: use the legacy
+        // derivation params explicitly so these vaults still unlock, while
+        // the public `keyFromPassword` default stays at the modern params.
+        keyMetadata ?? OLD_DERIVATION_PARAMS,
+      )),
   );
 
   const result = await decryptWithKey(cryptoKey, payload);
@@ -184,9 +267,16 @@ export async function decryptWithDetail(
   password: string,
   text: string,
 ): Promise<DetailedDecryptResult> {
-  const payload = JSON.parse(text);
+  const payload = parseVault(text);
   const { salt, keyMetadata } = payload;
-  const key = await keyFromPassword(password, salt, true, keyMetadata);
+  const key = await keyFromPassword(
+    password,
+    salt,
+    true,
+    // Legacy vaults carry no keyMetadata; derive with the legacy params so
+    // the exported key actually unlocks the vault.
+    keyMetadata ?? OLD_DERIVATION_PARAMS,
+  );
   const exportedKeyString = await exportKey(key);
   const vault = await decrypt(password, text, key);
 
@@ -213,22 +303,30 @@ export async function decryptWithKey<R>(
   const vector = Buffer.from(payload.iv, 'base64');
   const key = unwrapKey(encryptionKey);
 
-  let decryptedObj;
+  let decryptedData: Uint8Array;
   try {
+    // Only the WebCrypto decryption failure (wrong key or tampered
+    // ciphertext) is translated into a uniform "Incorrect password" error;
+    // keeping this indistinguishable avoids a decryption oracle.
     const result = await crypto.subtle.decrypt(
       { name: DERIVED_KEY_FORMAT, iv: vector },
       key,
       encryptedData,
     );
-
-    const decryptedData = new Uint8Array(result);
-    const decryptedStr = Buffer.from(decryptedData).toString(STRING_ENCODING);
-    decryptedObj = JSON.parse(decryptedStr);
+    decryptedData = new Uint8Array(result);
   } catch (e) {
     throw new Error('Incorrect password');
   }
 
-  return decryptedObj;
+  // Decryption succeeded, so the password was correct; failures below mean
+  // the plaintext itself is unusable and must surface as a distinct error
+  // rather than masquerading as a wrong password.
+  const decryptedStr = Buffer.from(decryptedData).toString(STRING_ENCODING);
+  try {
+    return JSON.parse(decryptedStr);
+  } catch (e) {
+    throw new Error('Corrupt vault: decrypted payload is not valid JSON');
+  }
 }
 
 /**
@@ -243,7 +341,12 @@ export async function decryptWithKey<R>(
 export async function importKey(
   keyString: string,
 ): Promise<EncryptionKey | CryptoKey> {
-  const exportedEncryptionKey = JSON.parse(keyString);
+  let exportedEncryptionKey: unknown;
+  try {
+    exportedEncryptionKey = JSON.parse(keyString);
+  } catch (e) {
+    throw new Error('Invalid key string: not valid JSON');
+  }
 
   if (isExportedEncryptionKey(exportedEncryptionKey)) {
     return {
@@ -327,10 +430,22 @@ export async function keyFromPassword(
   password: string,
   salt: string,
   exportable = false,
-  opts: KeyDerivationOptions = OLD_DERIVATION_PARAMS,
+  opts: KeyDerivationOptions = DEFAULT_DERIVATION_PARAMS,
 ): Promise<CryptoKey | EncryptionKey> {
+  // Legacy vaults (created before keyMetadata was recorded) are still
+  // handled by passing OLD_DERIVATION_PARAMS explicitly from the decrypt
+  // path; the public default is now the modern derivation params instead of
+  // the weak 10,000-iteration legacy ones.
+  validateKeyDerivationOptions(opts);
+
   const passBuffer = Buffer.from(password, STRING_ENCODING);
   const saltBuffer = Buffer.from(salt, 'base64');
+  if (saltBuffer.byteLength < MIN_SALT_BYTE_LENGTH) {
+    passBuffer.fill(0);
+    throw new Error(
+      `Invalid salt: must decode to at least ${MIN_SALT_BYTE_LENGTH} bytes`,
+    );
+  }
 
   const key = await globalThis.crypto.subtle.importKey(
     'raw',
@@ -352,6 +467,11 @@ export async function keyFromPassword(
     exportable,
     ['encrypt', 'decrypt'],
   );
+
+  // Scrub the password bytes: the imported CryptoKey is non-extractable and
+  // lives inside WebCrypto, while this raw copy would otherwise linger in
+  // the JS heap until garbage collection.
+  passBuffer.fill(0);
 
   return opts
     ? {
@@ -512,11 +632,20 @@ function isEncryptionKey(
 function isKeyDerivationOptions(
   derivationOptions: unknown,
 ): derivationOptions is KeyDerivationOptions {
-  return (
-    isPlainObject(derivationOptions) &&
-    hasProperty(derivationOptions, 'algorithm') &&
-    hasProperty(derivationOptions, 'params')
-  );
+  // Property presence alone is not enough: a crafted vault could carry
+  // `"params": null`, which passes the property check and then crashes on
+  // destructuring with a raw TypeError instead of the intended typed error.
+  if (
+    !isPlainObject(derivationOptions) ||
+    !hasProperty(derivationOptions, 'algorithm') ||
+    !hasProperty(derivationOptions, 'params') ||
+    !isPlainObject(derivationOptions.params) ||
+    !hasProperty(derivationOptions.params, 'iterations') ||
+    typeof derivationOptions.params.iterations !== 'number'
+  ) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -558,7 +687,17 @@ export function isVaultUpdated(
   vault: string,
   targetDerivationParams = DEFAULT_DERIVATION_PARAMS,
 ): boolean {
-  const { keyMetadata } = JSON.parse(vault);
+  let payload: unknown;
+  try {
+    payload = JSON.parse(vault);
+  } catch (e) {
+    // A non-JSON vault cannot be in the updated format.
+    return false;
+  }
+  if (!isPlainObject(payload)) {
+    return false;
+  }
+  const { keyMetadata } = payload;
   return (
     isKeyDerivationOptions(keyMetadata) &&
     keyMetadata.algorithm === targetDerivationParams.algorithm &&
